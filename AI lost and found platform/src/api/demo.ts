@@ -1,36 +1,55 @@
-import axios from "axios";
+const API = '/api';
 
-export interface User {
-  id: number;
-  name: string;
-  email: string;
+export interface Item {
+  id: string;
+  title: string;
+  description: string;
+  location: string;
+  image_url: string | null;
+  status: 'lost' | 'found';
+  created_at: string;
 }
 
-export interface CreateUserRequest {
-  name: string;
-  email: string;
+export async function getItems(filters?: {
+  status?: 'lost' | 'found' | 'all';
+  search?: string;
+}): Promise<Item[]> {
+  const params = new URLSearchParams();
+  if (filters?.status && filters.status !== 'all') params.set('status', filters.status);
+  if (filters?.search) params.set('search', filters.search);
+
+  const res  = await fetch(`${API}/items?${params}`);
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.message);
+  return json.data.items;
 }
 
-// GET 请求示例
-export const getUser = async (id: number): Promise<User> => {
-  const response = await axios.get<User>(`https://api.example.com/api/users/${id}`);
-  return response.data;
-};
+export async function getItem(id: string): Promise<Item> {
+  const res  = await fetch(`${API}/items/${id}`);
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.message);
+  return json.data.item;
+}
 
-// POST 请求示例
-export const createUser = async (data: CreateUserRequest): Promise<User> => {
-  const response = await axios.post<User>("https://api.example.com/api/users", data);
-  return response.data;
-};
+export async function createItem(item: {
+  title: string;
+  description: string;
+  location: string;
+  image_url?: string;
+  status: 'lost' | 'found';
+}): Promise<Item> {
+  const res  = await fetch(`${API}/items`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(item),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.message);
+  return json.data.item;
+}
 
-// supabase 请求示例
-// export const getUserById = async (id: number): Promise<User | null> => {
-//   const { data, error } = await supabase
-//     .from("users")
-//     .select("*")
-//     .eq("id", id)
-//     .single();
-
-//   if (error) return null;
-//   return data as User;
-// };
+export async function deleteItem(id: string): Promise<void> {
+  const res  = await fetch(`${API}/items/${id}`, { method: 'DELETE' });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.message);
+}
