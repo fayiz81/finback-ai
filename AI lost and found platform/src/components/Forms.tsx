@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, Upload, MapPin, Calendar, Search, Filter, X } from 'lucide-react';
+import { Mail, Lock, User, Upload, MapPin, Calendar, Search, Filter, X, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +16,7 @@ import { springPresets } from '@/lib/motion';
 export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
@@ -26,21 +27,24 @@ export function LoginForm() {
     setError('');
     setIsLoading(true);
 
-    const result = await login({ email, password });
-
-    if (result.success) {
-      navigate(ROUTE_PATHS.DASHBOARD);
-    } else {
-      setError(result.error || 'Login failed');
+    try {
+      const result = await login({ email, password });
+      if (result.success) {
+        navigate(ROUTE_PATHS.DASHBOARD);
+      } else {
+        setError(result.error || 'Login failed. Please check your credentials.');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Something went wrong. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   return (
     <motion.form
       onSubmit={handleSubmit}
-      className="space-y-6"
+      className="space-y-5"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={springPresets.gentle}
@@ -50,53 +54,74 @@ export function LoginForm() {
           Email Address
         </Label>
         <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             id="login-email"
             type="email"
             placeholder="student@college.edu"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="pl-10"
+            className="pl-10 bg-background/50 border-border/60 focus:border-primary/60 focus:bg-background transition-all"
             required
           />
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="login-password" className="text-sm font-medium">
-          Password
-        </Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="login-password" className="text-sm font-medium">
+            Password
+          </Label>
+          <span className="text-xs text-primary cursor-pointer hover:underline underline-offset-2 transition-colors">
+            Forgot password?
+          </span>
+        </div>
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             id="login-password"
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="pl-10"
+            className="pl-10 pr-10 bg-background/50 border-border/60 focus:border-primary/60 focus:bg-background transition-all"
             required
           />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
         </div>
       </div>
 
       {error && (
         <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          className="text-sm text-destructive bg-destructive/10 px-4 py-3 rounded-lg"
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-sm text-destructive bg-destructive/10 border border-destructive/20 px-4 py-3 rounded-lg"
         >
           {error}
         </motion.div>
       )}
 
-      <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? 'Signing in...' : 'Sign In'}
+      <Button
+        type="submit"
+        className="w-full font-semibold shadow-md shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-200"
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <span className="flex items-center gap-2">
+            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            Signing in...
+          </span>
+        ) : 'Sign In →'}
       </Button>
 
-      <div className="text-center text-sm text-muted-foreground">
-        Demo: admin@finback.ai or user@college.edu (any password)
+      <div className="text-center text-xs text-muted-foreground bg-muted/30 rounded-lg px-4 py-2.5">
+        Demo: <span className="text-foreground/70 font-medium">admin@finback.ai</span> or <span className="text-foreground/70 font-medium">user@college.edu</span> (any password)
       </div>
     </motion.form>
   );
@@ -107,14 +132,18 @@ export function RegisterForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
 
     if (password !== confirmPassword) {
       setError('Passwords do not match');
@@ -128,109 +157,144 @@ export function RegisterForm() {
 
     setIsLoading(true);
 
-    const result = await register({ email, password, name });
+    try {
+      const result = await register({ email, password, name });
 
-    if (result.success) {
-      navigate(ROUTE_PATHS.DASHBOARD);
-    } else {
-      setError(result.error || 'Registration failed');
+      if (result.success) {
+        // Some Supabase setups require email confirmation — handle both cases
+        if (result.requiresEmailConfirmation) {
+          setSuccess('Account created! Please check your email to confirm before logging in.');
+        } else {
+          navigate(ROUTE_PATHS.DASHBOARD);
+        }
+      } else {
+        setError(result.error || 'Registration failed. Please try again.');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Something went wrong. Please try again.');
+    } finally {
+      // This ALWAYS runs — fixes the stuck "Creating account..." bug
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   return (
     <motion.form
       onSubmit={handleSubmit}
-      className="space-y-6"
+      className="space-y-4"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={springPresets.gentle}
     >
       <div className="space-y-2">
-        <Label htmlFor="register-name" className="text-sm font-medium">
-          Full Name
-        </Label>
+        <Label htmlFor="register-name" className="text-sm font-medium">Full Name</Label>
         <div className="relative">
-          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             id="register-name"
             type="text"
             placeholder="John Student"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="pl-10"
+            className="pl-10 bg-background/50 border-border/60 focus:border-primary/60 focus:bg-background transition-all"
             required
           />
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="register-email" className="text-sm font-medium">
-          Email Address
-        </Label>
+        <Label htmlFor="register-email" className="text-sm font-medium">Email Address</Label>
         <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             id="register-email"
             type="email"
             placeholder="student@college.edu"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="pl-10"
+            className="pl-10 bg-background/50 border-border/60 focus:border-primary/60 focus:bg-background transition-all"
             required
           />
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="register-password" className="text-sm font-medium">
-          Password
-        </Label>
+        <Label htmlFor="register-password" className="text-sm font-medium">Password</Label>
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             id="register-password"
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="pl-10"
+            className="pl-10 pr-10 bg-background/50 border-border/60 focus:border-primary/60 focus:bg-background transition-all"
             required
           />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="register-confirm" className="text-sm font-medium">
-          Confirm Password
-        </Label>
+        <Label htmlFor="register-confirm" className="text-sm font-medium">Confirm Password</Label>
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             id="register-confirm"
-            type="password"
+            type={showConfirm ? 'text' : 'password'}
             placeholder="••••••••"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="pl-10"
+            className="pl-10 pr-10 bg-background/50 border-border/60 focus:border-primary/60 focus:bg-background transition-all"
             required
           />
+          <button
+            type="button"
+            onClick={() => setShowConfirm(!showConfirm)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
         </div>
       </div>
 
       {error && (
         <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          className="text-sm text-destructive bg-destructive/10 px-4 py-3 rounded-lg"
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-sm text-destructive bg-destructive/10 border border-destructive/20 px-4 py-3 rounded-lg"
         >
           {error}
         </motion.div>
       )}
 
-      <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? 'Creating account...' : 'Create Account'}
+      {success && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-sm text-green-500 bg-green-500/10 border border-green-500/20 px-4 py-3 rounded-lg"
+        >
+          {success}
+        </motion.div>
+      )}
+
+      <Button
+        type="submit"
+        className="w-full font-semibold shadow-md shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-200"
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <span className="flex items-center gap-2">
+            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            Creating account...
+          </span>
+        ) : 'Create Account →'}
       </Button>
     </motion.form>
   );
@@ -311,9 +375,7 @@ export function ItemForm({ type, onSubmit }: ItemFormProps) {
       transition={springPresets.gentle}
     >
       <div className="space-y-2">
-        <Label htmlFor="item-title" className="text-sm font-medium">
-          Item Title
-        </Label>
+        <Label htmlFor="item-title" className="text-sm font-medium">Item Title</Label>
         <Input
           id="item-title"
           type="text"
@@ -325,9 +387,7 @@ export function ItemForm({ type, onSubmit }: ItemFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="item-description" className="text-sm font-medium">
-          Description
-        </Label>
+        <Label htmlFor="item-description" className="text-sm font-medium">Description</Label>
         <Textarea
           id="item-description"
           placeholder="Provide detailed description including color, brand, distinctive features..."
@@ -339,18 +399,14 @@ export function ItemForm({ type, onSubmit }: ItemFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="item-category" className="text-sm font-medium">
-          Category
-        </Label>
+        <Label htmlFor="item-category" className="text-sm font-medium">Category</Label>
         <Select value={category} onValueChange={setCategory}>
           <SelectTrigger id="item-category">
             <SelectValue placeholder="Select category" />
           </SelectTrigger>
           <SelectContent>
             {ITEM_CATEGORIES.map((cat) => (
-              <SelectItem key={cat} value={cat}>
-                {cat}
-              </SelectItem>
+              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -361,11 +417,7 @@ export function ItemForm({ type, onSubmit }: ItemFormProps) {
         <div className="space-y-4">
           {imagePreview ? (
             <div className="relative">
-              <img
-                src={imagePreview}
-                alt="Preview"
-                className="w-full h-48 object-cover rounded-lg"
-              />
+              <img src={imagePreview} alt="Preview" className="w-full h-48 object-cover rounded-lg" />
               <Button
                 type="button"
                 variant="destructive"
@@ -374,9 +426,7 @@ export function ItemForm({ type, onSubmit }: ItemFormProps) {
                 onClick={() => {
                   setImageFile(null);
                   setImagePreview('');
-                  if (fileInputRef.current) {
-                    fileInputRef.current.value = '';
-                  }
+                  if (fileInputRef.current) fileInputRef.current.value = '';
                 }}
               >
                 <X className="h-4 w-4" />
@@ -388,25 +438,15 @@ export function ItemForm({ type, onSubmit }: ItemFormProps) {
               className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
             >
               <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">
-                Click to upload image or drag and drop
-              </p>
+              <p className="text-sm text-muted-foreground">Click to upload image or drag and drop</p>
             </div>
           )}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleImageChange}
-            className="hidden"
-          />
+          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="item-location" className="text-sm font-medium">
-          Location
-        </Label>
+        <Label htmlFor="item-location" className="text-sm font-medium">Location</Label>
         <div className="flex gap-2">
           <div className="relative flex-1">
             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -420,12 +460,7 @@ export function ItemForm({ type, onSubmit }: ItemFormProps) {
               required
             />
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleGetLocation}
-            disabled={isGettingLocation}
-          >
+          <Button type="button" variant="outline" onClick={handleGetLocation} disabled={isGettingLocation}>
             {isGettingLocation ? 'Getting...' : 'Use GPS'}
           </Button>
         </div>
@@ -475,17 +510,12 @@ export function FilterForm({ onFilter }: FilterFormProps) {
 
   const handleApplyFilters = () => {
     const filters: any = {};
-
     if (searchQuery) filters.searchQuery = searchQuery;
     if (category !== 'all') filters.category = category;
     if (maxDistance) filters.maxDistance = parseFloat(maxDistance);
     if (startDate && endDate) {
-      filters.dateRange = {
-        start: new Date(startDate),
-        end: new Date(endDate),
-      };
+      filters.dateRange = { start: new Date(startDate), end: new Date(endDate) };
     }
-
     onFilter(filters);
   };
 
@@ -506,11 +536,7 @@ export function FilterForm({ onFilter }: FilterFormProps) {
             <Filter className="h-5 w-5" />
             Filters
           </h3>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
+          <Button variant="ghost" size="sm" onClick={() => setIsExpanded(!isExpanded)}>
             {isExpanded ? 'Hide' : 'Show'}
           </Button>
         </div>
@@ -534,28 +560,20 @@ export function FilterForm({ onFilter }: FilterFormProps) {
             className="space-y-4"
           >
             <div className="space-y-2">
-              <Label htmlFor="filter-category" className="text-sm font-medium">
-                Category
-              </Label>
+              <Label htmlFor="filter-category" className="text-sm font-medium">Category</Label>
               <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger id="filter-category">
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger id="filter-category"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
                   {ITEM_CATEGORIES.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
-                    </SelectItem>
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="filter-distance" className="text-sm font-medium">
-                Max Distance (km)
-              </Label>
+              <Label htmlFor="filter-distance" className="text-sm font-medium">Max Distance (km)</Label>
               <Input
                 id="filter-distance"
                 type="number"
@@ -569,38 +587,20 @@ export function FilterForm({ onFilter }: FilterFormProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="filter-start" className="text-sm font-medium">
-                  Start Date
-                </Label>
-                <Input
-                  id="filter-start"
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
+                <Label htmlFor="filter-start" className="text-sm font-medium">Start Date</Label>
+                <Input id="filter-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="filter-end" className="text-sm font-medium">
-                  End Date
-                </Label>
-                <Input
-                  id="filter-end"
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                />
+                <Label htmlFor="filter-end" className="text-sm font-medium">End Date</Label>
+                <Input id="filter-end" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
               </div>
             </div>
           </motion.div>
         )}
 
         <div className="flex gap-2">
-          <Button onClick={handleApplyFilters} className="flex-1">
-            Apply Filters
-          </Button>
-          <Button variant="outline" onClick={handleReset}>
-            Reset
-          </Button>
+          <Button onClick={handleApplyFilters} className="flex-1">Apply Filters</Button>
+          <Button variant="outline" onClick={handleReset}>Reset</Button>
         </div>
       </div>
     </Card>
