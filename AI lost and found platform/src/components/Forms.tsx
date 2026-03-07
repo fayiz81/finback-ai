@@ -19,7 +19,7 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const { login } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -28,11 +28,11 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
-      const result = await login({ email, password });
-      if (result.success) {
-        navigate(ROUTE_PATHS.DASHBOARD);
+      const { error: authError } = await signIn(email, password);
+      if (authError) {
+        setError(authError.message || 'Login failed. Please check your credentials.');
       } else {
-        setError(result.error || 'Login failed. Please check your credentials.');
+        navigate(ROUTE_PATHS.DASHBOARD);
       }
     } catch (err: any) {
       setError(err?.message || 'Something went wrong. Please try again.');
@@ -137,7 +137,7 @@ export function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const { register } = useAuth();
+  const { signUp } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -158,22 +158,22 @@ export function RegisterForm() {
     setIsLoading(true);
 
     try {
-      const result = await register({ email, password, name });
+      const { data, error: authError } = await signUp(email, password, name);
 
-      if (result.success) {
+      if (!authError && data?.user) {
         // Some Supabase setups require email confirmation — handle both cases
-        if (result.requiresEmailConfirmation) {
+        if (!data.session) {
           setSuccess('Account created! Please check your email to confirm before logging in.');
         } else {
           navigate(ROUTE_PATHS.DASHBOARD);
         }
       } else {
-        setError(result.error || 'Registration failed. Please try again.');
+        setError(authError?.message || 'Registration failed. Please try again.');
       }
     } catch (err: any) {
       setError(err?.message || 'Something went wrong. Please try again.');
     } finally {
-      // This ALWAYS runs — fixes the stuck "Creating account..." bug
+      // Always resets loading
       setIsLoading(false);
     }
   };
