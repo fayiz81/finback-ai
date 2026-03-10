@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { ROUTE_PATHS, USER_ROLES } from "@/lib/index";
+import { ROUTE_PATHS } from "@/lib/index";
 import { Layout } from "@/components/Layout";
 import Home from "@/pages/Home";
 import Dashboard from "@/pages/Dashboard";
@@ -31,7 +31,7 @@ interface ProtectedRouteProps {
 }
 
 function ProtectedRoute({ children, requireAuth = true, requireAdmin = false }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading, isAdmin } = useAuth();
 
   if (isLoading) {
     return (
@@ -48,7 +48,7 @@ function ProtectedRoute({ children, requireAuth = true, requireAdmin = false }: 
     return <Navigate to={ROUTE_PATHS.AUTH} replace />;
   }
 
-  if (requireAdmin && user?.role !== USER_ROLES.ADMIN) {
+  if (requireAdmin && !isAdmin()) {
     return <Navigate to={ROUTE_PATHS.DASHBOARD} replace />;
   }
 
@@ -72,7 +72,7 @@ function AppContent() {
     <Routes>
       <Route path={ROUTE_PATHS.HOME} element={<Home />} />
       <Route path={ROUTE_PATHS.AUTH} element={<Auth />} />
-      
+
       <Route
         path={ROUTE_PATHS.DASHBOARD}
         element={
@@ -83,7 +83,7 @@ function AppContent() {
           </ProtectedRoute>
         }
       />
-      
+
       <Route
         path={ROUTE_PATHS.BROWSE}
         element={
@@ -94,7 +94,7 @@ function AppContent() {
           </ProtectedRoute>
         }
       />
-      
+
       <Route
         path={ROUTE_PATHS.SUBMIT}
         element={
@@ -105,7 +105,7 @@ function AppContent() {
           </ProtectedRoute>
         }
       />
-      
+
       <Route
         path={ROUTE_PATHS.MATCHES}
         element={
@@ -116,18 +116,17 @@ function AppContent() {
           </ProtectedRoute>
         }
       />
-      
+
+      {/* Admin — NO Layout wrapper, has its own full UI */}
       <Route
         path={ROUTE_PATHS.ADMIN}
         element={
           <ProtectedRoute requireAdmin>
-            <Layout>
-              <AdminDashboard />
-            </Layout>
+            <AdminDashboard />
           </ProtectedRoute>
         }
       />
-      
+
       <Route
         path="*"
         element={
