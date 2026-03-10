@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Home, Search, Upload, Zap, Shield, User, LogOut, Moon, Sun } from 'lucide-react';
+import { Menu, Home, Search, Upload, Zap, Shield, User, LogOut, Moon, Sun } from 'lucide-react';
 import { ROUTE_PATHS } from '@/lib/index';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 interface LayoutProps {
@@ -26,7 +26,12 @@ export function Layout({ children }: LayoutProps) {
   const [headerHeight, setHeaderHeight] = useState(0);
   const headerRef = useRef<HTMLElement>(null);
   const location = useLocation();
-  const { user, isAuthenticated, logout, isAdmin } = useAuth();
+  const { user, isAuthenticated, signOut, isAdmin } = useAuth();
+
+  // Get display name from Supabase user metadata
+  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+  const displayEmail = user?.email || '';
+  const avatarInitial = displayName.charAt(0).toUpperCase();
 
   useEffect(() => {
     const updateHeight = () => {
@@ -36,13 +41,9 @@ export function Layout({ children }: LayoutProps) {
         document.documentElement.style.setProperty('--header-height', `${height}px`);
       }
     };
-
     updateHeight();
     const resizeObserver = new ResizeObserver(updateHeight);
-    if (headerRef.current) {
-      resizeObserver.observe(headerRef.current);
-    }
-
+    if (headerRef.current) resizeObserver.observe(headerRef.current);
     return () => resizeObserver.disconnect();
   }, []);
 
@@ -57,10 +58,6 @@ export function Layout({ children }: LayoutProps) {
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
-
-  const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
-  };
 
   const navigationItems = [
     { to: ROUTE_PATHS.HOME, label: 'Home', icon: Home },
@@ -81,11 +78,7 @@ export function Layout({ children }: LayoutProps) {
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-8">
               <NavLink to={ROUTE_PATHS.HOME} className="flex items-center gap-2">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex items-center gap-2"
-                >
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="flex items-center gap-2">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent shadow-lg">
                     <Zap className="h-6 w-6 text-primary-foreground" />
                   </div>
@@ -127,17 +120,8 @@ export function Layout({ children }: LayoutProps) {
             </div>
 
             <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleDarkMode}
-                className="rounded-lg"
-              >
-                {isDarkMode ? (
-                  <Sun className="h-5 w-5" />
-                ) : (
-                  <Moon className="h-5 w-5" />
-                )}
+              <Button variant="ghost" size="icon" onClick={() => setIsDarkMode(!isDarkMode)} className="rounded-lg">
+                {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
               </Button>
 
               {isAuthenticated && user ? (
@@ -145,9 +129,8 @@ export function Layout({ children }: LayoutProps) {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                       <Avatar className="h-10 w-10 ring-2 ring-primary/20">
-                        <AvatarImage src={user.avatar} alt={user.name} />
                         <AvatarFallback className="bg-primary text-primary-foreground">
-                          {user.name.charAt(0).toUpperCase()}
+                          {avatarInitial}
                         </AvatarFallback>
                       </Avatar>
                     </Button>
@@ -155,8 +138,8 @@ export function Layout({ children }: LayoutProps) {
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuLabel>
                       <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium">{user.name}</p>
-                        <p className="text-xs text-muted-foreground">{user.email}</p>
+                        <p className="text-sm font-medium">{displayName}</p>
+                        <p className="text-xs text-muted-foreground">{displayEmail}</p>
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
@@ -175,7 +158,10 @@ export function Layout({ children }: LayoutProps) {
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={logout} className="flex items-center gap-2 cursor-pointer text-destructive">
+                    <DropdownMenuItem
+                      onClick={() => signOut()}
+                      className="flex items-center gap-2 cursor-pointer text-destructive"
+                    >
                       <LogOut className="h-4 w-4" />
                       Logout
                     </DropdownMenuItem>
@@ -252,71 +238,31 @@ export function Layout({ children }: LayoutProps) {
                 AI-powered smart lost and found platform for colleges. Never lose track of your belongings again.
               </p>
             </div>
-
             <div>
               <h3 className="font-semibold mb-4">Platform</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>
-                  <NavLink to={ROUTE_PATHS.BROWSE} className="hover:text-foreground transition-colors">
-                    Browse Items
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to={ROUTE_PATHS.SUBMIT} className="hover:text-foreground transition-colors">
-                    Submit Item
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to={ROUTE_PATHS.MATCHES} className="hover:text-foreground transition-colors">
-                    View Matches
-                  </NavLink>
-                </li>
+                <li><NavLink to={ROUTE_PATHS.BROWSE} className="hover:text-foreground transition-colors">Browse Items</NavLink></li>
+                <li><NavLink to={ROUTE_PATHS.SUBMIT} className="hover:text-foreground transition-colors">Submit Item</NavLink></li>
+                <li><NavLink to={ROUTE_PATHS.MATCHES} className="hover:text-foreground transition-colors">View Matches</NavLink></li>
               </ul>
             </div>
-
             <div>
               <h3 className="font-semibold mb-4">Company</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>
-                  <a href="#" className="hover:text-foreground transition-colors">
-                    About Us
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-foreground transition-colors">
-                    Contact
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-foreground transition-colors">
-                    Privacy Policy
-                  </a>
-                </li>
+                <li><a href="#" className="hover:text-foreground transition-colors">About Us</a></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">Contact</a></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">Privacy Policy</a></li>
               </ul>
             </div>
-
             <div>
               <h3 className="font-semibold mb-4">Support</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>
-                  <a href="#" className="hover:text-foreground transition-colors">
-                    Help Center
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-foreground transition-colors">
-                    Terms of Service
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-foreground transition-colors">
-                    Report Issue
-                  </a>
-                </li>
+                <li><a href="#" className="hover:text-foreground transition-colors">Help Center</a></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">Terms of Service</a></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">Report Issue</a></li>
               </ul>
             </div>
           </div>
-
           <div className="mt-12 pt-8 border-t border-border/50 text-center text-sm text-muted-foreground">
             <p>© 2026 FinBack AI. All rights reserved.</p>
           </div>
