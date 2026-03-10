@@ -1,24 +1,16 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { useAuth } from '@/hooks/useAuth';
-import { mockLostItems, mockFoundItems, mockMatches } from '@/data/index';
-import { USER_ROLES, ITEM_CATEGORIES } from '@/lib/index';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  Users, Package, TrendingUp, AlertTriangle, CheckCircle,
-  Activity, Shield, Clock, MapPin, Mail, RefreshCw,
-  UserCheck, UserX, Trash2, Search, BarChart3, Filter,
-} from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
-import { ROUTE_PATHS } from '@/lib/index';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/lib/supabase';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { ROUTE_PATHS } from '@/lib/index';
+import {
+  Users, Package, Shield, RefreshCw, Trash2,
+  UserCheck, Mail, Search, LogOut, ChevronRight,
+  AlertTriangle, CheckCircle2, MapPin, Image,
+  BarChart2, TrendingUp,
+} from 'lucide-react';
 
 interface SupabaseUser {
   id: string;
@@ -27,599 +19,460 @@ interface SupabaseUser {
   created_at: string;
   last_sign_in_at: string | null;
   user_metadata: { full_name?: string };
-  banned_until?: string | null;
 }
 
-export default function AdminDashboard() {
-  const { isAdmin, isLoading } = useAuth();
+interface Item {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  type: 'lost' | 'found';
+  status: string;
+  image_url: string | null;
+  location_name: string;
+  created_at: string;
+  user_id: string;
+}
 
-  // Users state
+type Tab = 'overview' | 'users' | 'items';
+
+export default function AdminDashboard() {
+  const { isAdmin, isLoading, signOut } = useAuth();
+  const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
   const [users, setUsers] = useState<SupabaseUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
-  const [usersError, setUsersError] = useState('');
+  const [userSearch, setUserSearch] = useState('');
+  const [userFilter, setUserFilter] = useState<'all' | 'confirmed' | 'unconfirmed'>('all');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [actionSuccess, setActionSuccess] = useState('');
+  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
-  // Filters
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [filterCategory, setFilterCategory] = useState('all');
-  const [userFilter, setUserFilter] = useState('all'); // all | confirmed | unconfirmed
+  const [items, setItems] = useState<Item[]>([]);
+  const [itemsLoading, setItemsLoading] = useState(true);
+  const [itemSearch, setItemSearch] = useState('');
+  const [itemTypeFilter, setItemTypeFilter] = useState<'all' | 'lost' | 'found'>('all');
 
-  // Load real users from Supabase
+  const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+
   const fetchUsers = useCallback(async () => {
     setUsersLoading(true);
-    setUsersError('');
     try {
       const { data, error } = await supabaseAdmin.auth.admin.listUsers();
       if (error) throw error;
       setUsers(data.users as SupabaseUser[]);
     } catch (err: any) {
-      setUsersError(err.message || 'Failed to load users');
+      showToast(err.message || 'Failed to load users. Check VITE_SUPABASE_SERVICE_KEY in Vercel.', 'error');
     } finally {
       setUsersLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+  const fetchItems = useCallback(async () => {
+    setItemsLoading(true);
+    try {
+      const { data, error } = await supabase.from('items').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      setItems(data || []);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to load items', 'error');
+    } finally {
+      setItemsLoading(false);
+    }
+  }, []);
 
-  // Confirm a user's email
+  useEffect(() => { fetchUsers(); fetchItems(); }, [fetchUsers, fetchItems]);
+
   const confirmEmail = async (userId: string) => {
     setActionLoading(userId + '_confirm');
-    setActionSuccess('');
     try {
-      const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-        email_confirm: true,
-      });
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, { email_confirm: true });
       if (error) throw error;
-      setActionSuccess('Email confirmed successfully!');
+      showToast('Email confirmed!');
       await fetchUsers();
-    } catch (err: any) {
-      setUsersError(err.message || 'Failed to confirm email');
-    } finally {
-      setActionLoading(null);
-    }
+    } catch (err: any) { showToast(err.message, 'error'); }
+    finally { setActionLoading(null); }
   };
 
-  // Delete a user
   const deleteUser = async (userId: string, email: string) => {
-    if (!confirm(`Are you sure you want to delete user ${email}? This cannot be undone.`)) return;
+    if (!confirm(`Delete ${email}? This cannot be undone.`)) return;
     setActionLoading(userId + '_delete');
-    setActionSuccess('');
     try {
       const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
       if (error) throw error;
-      setActionSuccess(`User ${email} deleted.`);
+      showToast(`Deleted ${email}`);
       await fetchUsers();
-    } catch (err: any) {
-      setUsersError(err.message || 'Failed to delete user');
-    } finally {
-      setActionLoading(null);
-    }
+    } catch (err: any) { showToast(err.message, 'error'); }
+    finally { setActionLoading(null); }
   };
 
-  // Stats from mock data (replace with real queries when ready)
-  const stats = useMemo(() => {
-    const totalLostItems = mockLostItems.length;
-    const totalFoundItems = mockFoundItems.length;
-    const totalMatches = mockMatches.length;
-    const activeMatches = mockMatches.filter((m) => m.status === 'pending').length;
-    const confirmedMatches = mockMatches.filter((m) => m.status === 'confirmed').length;
-    const highConfidenceMatches = mockMatches.filter((m) => m.confidenceScore > 0.8).length;
-    const confirmedUsers = users.filter((u) => u.email_confirmed_at).length;
-    const unconfirmedUsers = users.filter((u) => !u.email_confirmed_at).length;
+  const deleteItem = async (itemId: string) => {
+    if (!confirm('Delete this item?')) return;
+    setActionLoading(itemId + '_item');
+    try {
+      const { error } = await supabase.from('items').delete().eq('id', itemId);
+      if (error) throw error;
+      showToast('Item deleted');
+      await fetchItems();
+    } catch (err: any) { showToast(err.message, 'error'); }
+    finally { setActionLoading(null); }
+  };
 
-    const recentActivity = [
-      ...mockLostItems.map((item) => ({ type: 'lost', item, timestamp: item.createdAt })),
-      ...mockFoundItems.map((item) => ({ type: 'found', item, timestamp: item.createdAt })),
-      ...mockMatches.map((match) => ({ type: 'match', match, timestamp: match.createdAt })),
-    ]
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-      .slice(0, 10);
+  const updateItemStatus = async (itemId: string, status: string) => {
+    try {
+      const { error } = await supabase.from('items').update({ status }).eq('id', itemId);
+      if (error) throw error;
+      showToast(`Status → ${status}`);
+      setItems(prev => prev.map(i => i.id === itemId ? { ...i, status } : i));
+    } catch (err: any) { showToast(err.message, 'error'); }
+  };
 
-    return {
-      totalUsers: users.length,
-      confirmedUsers,
-      unconfirmedUsers,
-      totalLostItems,
-      totalFoundItems,
-      totalMatches,
-      activeMatches,
-      confirmedMatches,
-      highConfidenceMatches,
-      recentActivity,
-    };
-  }, [users]);
+  const filteredUsers = users.filter(u => {
+    const name = u.user_metadata?.full_name || '';
+    const matchSearch = name.toLowerCase().includes(userSearch.toLowerCase()) || u.email?.toLowerCase().includes(userSearch.toLowerCase());
+    const matchFilter = userFilter === 'all' || (userFilter === 'confirmed' && u.email_confirmed_at) || (userFilter === 'unconfirmed' && !u.email_confirmed_at);
+    return matchSearch && matchFilter;
+  });
 
-  // Filtered users
-  const filteredUsers = useMemo(() => {
-    return users.filter((user) => {
-      const name = user.user_metadata?.full_name || '';
-      const matchesSearch =
-        name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesFilter =
-        userFilter === 'all' ||
-        (userFilter === 'confirmed' && user.email_confirmed_at) ||
-        (userFilter === 'unconfirmed' && !user.email_confirmed_at);
-      return matchesSearch && matchesFilter;
-    });
-  }, [users, searchQuery, userFilter]);
+  const filteredItems = items.filter(i => {
+    const matchSearch = i.title?.toLowerCase().includes(itemSearch.toLowerCase()) || i.location_name?.toLowerCase().includes(itemSearch.toLowerCase());
+    const matchType = itemTypeFilter === 'all' || i.type === itemTypeFilter;
+    return matchSearch && matchType;
+  });
 
-  const filteredItems = useMemo(() => {
-    const allItems = [
-      ...mockLostItems.map((item) => ({ ...item, itemType: 'lost' as const })),
-      ...mockFoundItems.map((item) => ({ ...item, itemType: 'found' as const })),
-    ];
-    return allItems.filter((item) => {
-      const matchesSearch =
-        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStatus = filterStatus === 'all' || item.status === filterStatus;
-      const matchesCategory = filterCategory === 'all' || item.category === filterCategory;
-      return matchesSearch && matchesStatus && matchesCategory;
-    });
-  }, [searchQuery, filterStatus, filterCategory]);
+  const stats = {
+    totalUsers: users.length,
+    confirmed: users.filter(u => u.email_confirmed_at).length,
+    unconfirmed: users.filter(u => !u.email_confirmed_at).length,
+    totalItems: items.length,
+    lostItems: items.filter(i => i.type === 'lost').length,
+    foundItems: items.filter(i => i.type === 'found').length,
+    activeItems: items.filter(i => i.status === 'active').length,
+    resolvedItems: items.filter(i => i.status === 'resolved').length,
+  };
 
-  const filteredMatches = useMemo(() => {
-    return mockMatches.filter((match) => filterStatus === 'all' || match.status === filterStatus);
-  }, [filterStatus]);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
-      </div>
-    );
-  }
+  if (isLoading) return (
+    <div className="flex items-center justify-center min-h-screen bg-[#09090f]">
+      <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
 
   if (!isAdmin()) return <Navigate to={ROUTE_PATHS.HOME} replace />;
 
+  const navItems: { id: Tab; label: string; icon: React.ReactNode; count?: number }[] = [
+    { id: 'overview', label: 'Overview', icon: <BarChart2 size={16} /> },
+    { id: 'users', label: 'Users', icon: <Users size={16} />, count: stats.totalUsers },
+    { id: 'items', label: 'Items', icon: <Package size={16} />, count: stats.totalItems },
+  ];
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="w-full px-4 py-8 mx-auto max-w-7xl">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+    <div className="flex min-h-screen bg-[#09090f] text-white" style={{ fontFamily: 'system-ui, sans-serif' }}>
 
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-4xl font-bold tracking-tight">Admin Dashboard</h1>
-              <p className="text-muted-foreground mt-2">Platform oversight and management tools</p>
-            </div>
-            <Badge variant="secondary" className="px-4 py-2">
-              <Shield className="w-4 h-4 mr-2" />
-              Administrator
-            </Badge>
+      {/* Toast */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: -20, x: '-50%' }}
+            className={`fixed top-6 left-1/2 z-50 px-5 py-3 rounded-xl text-sm font-medium flex items-center gap-2 shadow-2xl ${
+              toast.type === 'success'
+                ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-300'
+                : 'bg-red-500/20 border border-red-500/30 text-red-300'
+            }`}
+          >
+            {toast.type === 'success' ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />}
+            {toast.msg}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar */}
+      <motion.aside
+        animate={{ width: sidebarOpen ? 220 : 64 }}
+        transition={{ duration: 0.2, ease: 'easeInOut' }}
+        className="relative flex-shrink-0 flex flex-col bg-[#0e0e18] border-r border-white/5 overflow-hidden"
+      >
+        <div className="flex items-center gap-3 px-4 h-16 border-b border-white/5">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
+            <Shield size={14} />
           </div>
+          {sidebarOpen && <span className="font-bold text-sm whitespace-nowrap">FinBack Admin</span>}
+        </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {[
-              {
-                title: 'Total Users',
-                value: stats.totalUsers,
-                sub: `${stats.confirmedUsers} confirmed, ${stats.unconfirmedUsers} pending`,
-                icon: <Users className="w-4 h-4 text-primary" />,
-                border: 'border-primary/20',
-                delay: 0.1,
-              },
-              {
-                title: 'Total Items',
-                value: stats.totalLostItems + stats.totalFoundItems,
-                sub: `${stats.totalLostItems} lost, ${stats.totalFoundItems} found`,
-                icon: <Package className="w-4 h-4 text-accent" />,
-                border: 'border-accent/20',
-                delay: 0.2,
-              },
-              {
-                title: 'AI Matches',
-                value: stats.totalMatches,
-                sub: `${stats.highConfidenceMatches} high confidence (>80%)`,
-                icon: <TrendingUp className="w-4 h-4 text-chart-3" />,
-                border: 'border-chart-3/20',
-                delay: 0.3,
-              },
-              {
-                title: 'Unconfirmed Emails',
-                value: stats.unconfirmedUsers,
-                sub: 'Users needing email confirmation',
-                icon: <Mail className="w-4 h-4 text-destructive" />,
-                border: 'border-destructive/20',
-                delay: 0.4,
-              },
-            ].map((s) => (
-              <motion.div key={s.title} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: s.delay }}>
-                <Card className={s.border}>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">{s.title}</CardTitle>
-                    {s.icon}
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold">{s.value}</div>
-                    <p className="text-xs text-muted-foreground mt-1">{s.sub}</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
+        <nav className="flex-1 p-3 space-y-1">
+          {navItems.map(item => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                activeTab === item.id ? 'bg-violet-500/15 text-violet-300' : 'text-white/40 hover:text-white/80 hover:bg-white/5'
+              }`}
+            >
+              <span className="flex-shrink-0">{item.icon}</span>
+              {sidebarOpen && <span className="flex-1 text-left whitespace-nowrap">{item.label}</span>}
+              {sidebarOpen && item.count !== undefined && (
+                <span className="text-xs bg-white/10 px-1.5 py-0.5 rounded-md">{item.count}</span>
+              )}
+            </button>
+          ))}
+        </nav>
+
+        <div className="p-3 border-t border-white/5 space-y-1">
+          <button
+            onClick={() => { fetchUsers(); fetchItems(); }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/40 hover:text-white/80 hover:bg-white/5 transition-all"
+          >
+            <RefreshCw size={16} className="flex-shrink-0" />
+            {sidebarOpen && <span>Refresh</span>}
+          </button>
+          <button
+            onClick={() => signOut()}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-all"
+          >
+            <LogOut size={16} className="flex-shrink-0" />
+            {sidebarOpen && <span>Sign Out</span>}
+          </button>
+        </div>
+
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="absolute top-4 -right-3 w-6 h-6 rounded-full bg-[#1a1a2e] border border-white/10 flex items-center justify-center text-white/40 hover:text-white z-10"
+        >
+          <ChevronRight size={12} className={`transition-transform ${sidebarOpen ? 'rotate-180' : ''}`} />
+        </button>
+      </motion.aside>
+
+      {/* Main */}
+      <div className="flex-1 flex flex-col min-w-0">
+        <header className="h-16 flex items-center px-6 border-b border-white/5 bg-[#09090f]/80 backdrop-blur sticky top-0 z-20">
+          <div>
+            <h1 className="font-bold text-lg capitalize">{activeTab}</h1>
+            <p className="text-xs text-white/30">FinBack AI Control Panel</p>
           </div>
+        </header>
 
-          {/* Tabs */}
-          <Tabs defaultValue="users" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="overview"><BarChart3 className="w-4 h-4 mr-2" />Overview</TabsTrigger>
-              <TabsTrigger value="users"><Users className="w-4 h-4 mr-2" />Users</TabsTrigger>
-              <TabsTrigger value="items"><Package className="w-4 h-4 mr-2" />Items</TabsTrigger>
-              <TabsTrigger value="matches"><Activity className="w-4 h-4 mr-2" />Matches</TabsTrigger>
-            </TabsList>
+        <main className="flex-1 p-6 overflow-auto">
+          <AnimatePresence mode="wait">
 
-            {/* OVERVIEW TAB */}
-            <TabsContent value="overview" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Platform Analytics</CardTitle>
-                  <CardDescription>Real-time system statistics and performance metrics</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {[
-                      { label: 'Match Success Rate', value: stats.confirmedMatches / (stats.totalMatches || 1), color: 'bg-chart-3' },
-                      { label: 'Active Matches', value: stats.activeMatches / (stats.totalMatches || 1), color: 'bg-accent' },
-                      { label: 'Email Confirmation Rate', value: stats.confirmedUsers / (stats.totalUsers || 1), color: 'bg-primary' },
-                    ].map((bar) => (
-                      <div key={bar.label} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">{bar.label}</span>
-                          <span className="text-sm text-muted-foreground">{Math.round(bar.value * 100)}%</span>
-                        </div>
-                        <div className="w-full bg-muted rounded-full h-2">
-                          <div className={`${bar.color} h-2 rounded-full transition-all duration-500`} style={{ width: `${bar.value * 100}%` }} />
-                        </div>
+            {/* OVERVIEW */}
+            {activeTab === 'overview' && (
+              <motion.div key="overview" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[
+                    { label: 'Total Users', value: stats.totalUsers, sub: `${stats.unconfirmed} unconfirmed`, icon: <Users size={16} />, color: 'from-violet-500/20 to-violet-500/5', accent: 'text-violet-400' },
+                    { label: 'Total Items', value: stats.totalItems, sub: `${stats.lostItems} lost · ${stats.foundItems} found`, icon: <Package size={16} />, color: 'from-blue-500/20 to-blue-500/5', accent: 'text-blue-400' },
+                    { label: 'Active Items', value: stats.activeItems, sub: 'currently open', icon: <TrendingUp size={16} />, color: 'from-emerald-500/20 to-emerald-500/5', accent: 'text-emerald-400' },
+                    { label: 'Resolved', value: stats.resolvedItems, sub: 'successfully closed', icon: <CheckCircle2 size={16} />, color: 'from-amber-500/20 to-amber-500/5', accent: 'text-amber-400' },
+                  ].map((s, i) => (
+                    <motion.div key={s.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}>
+                      <div className={`p-5 rounded-2xl bg-gradient-to-br ${s.color} border border-white/5`}>
+                        <div className={`${s.accent} mb-3`}>{s.icon}</div>
+                        <div className="text-3xl font-bold mb-1">{s.value}</div>
+                        <div className="text-xs text-white/40 font-medium">{s.label}</div>
+                        <div className="text-xs text-white/25 mt-0.5">{s.sub}</div>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+                    </motion.div>
+                  ))}
+                </div>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Activity</CardTitle>
-                  <CardDescription>Latest platform events and user actions</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {stats.recentActivity.map((activity, index) => (
-                      <div key={index} className="flex items-start gap-4 p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-                        <div className="flex-shrink-0">
-                          {activity.type === 'lost' && <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center"><AlertTriangle className="w-5 h-5 text-destructive" /></div>}
-                          {activity.type === 'found' && <div className="w-10 h-10 rounded-full bg-chart-3/10 flex items-center justify-center"><CheckCircle className="w-5 h-5 text-chart-3" /></div>}
-                          {activity.type === 'match' && <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center"><Activity className="w-5 h-5 text-accent" /></div>}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium">
-                            {activity.type === 'lost' && 'item' in activity && `Lost Item: ${activity.item.title}`}
-                            {activity.type === 'found' && 'item' in activity && `Found Item: ${activity.item.title}`}
-                            {activity.type === 'match' && 'match' in activity && `AI Match Generated (${Math.round(activity.match.confidenceScore * 100)}% confidence)`}
-                          </p>
-                          <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{activity.timestamp.toLocaleString()}</span>
-                            {(activity.type === 'lost' || activity.type === 'found') && 'item' in activity && (
-                              <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{activity.item.location.name}</span>
-                            )}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Recent Items */}
+                  <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
+                    <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">
+                      <span className="font-semibold text-sm">Recent Items</span>
+                      <button onClick={() => setActiveTab('items')} className="text-xs text-violet-400 hover:text-violet-300 flex items-center gap-1">View all <ChevronRight size={12} /></button>
+                    </div>
+                    <div className="divide-y divide-white/5">
+                      {items.slice(0, 5).map(item => (
+                        <div key={item.id} className="px-5 py-3 flex items-center gap-3 hover:bg-white/[0.02]">
+                          <div className="w-9 h-9 rounded-lg bg-white/5 overflow-hidden flex-shrink-0">
+                            {item.image_url ? <img src={item.image_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Image size={12} className="text-white/20" /></div>}
                           </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{item.title}</p>
+                            <p className="text-xs text-white/30 flex items-center gap-1"><MapPin size={9} />{item.location_name || '—'}</p>
+                          </div>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${item.type === 'lost' ? 'bg-red-500/15 text-red-400' : 'bg-emerald-500/15 text-emerald-400'}`}>{item.type}</span>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* USERS TAB */}
-            <TabsContent value="users" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle>User Management</CardTitle>
-                      <CardDescription>Manage real users from Supabase — confirm emails, delete accounts</CardDescription>
+                      ))}
+                      {items.length === 0 && <div className="px-5 py-8 text-center text-white/25 text-sm">No items yet</div>}
                     </div>
-                    <Button variant="outline" size="sm" onClick={fetchUsers} disabled={usersLoading}>
-                      <RefreshCw className={`w-4 h-4 mr-2 ${usersLoading ? 'animate-spin' : ''}`} />
-                      Refresh
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {/* Feedback messages */}
-                  {actionSuccess && (
-                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-4 text-sm text-green-500 bg-green-500/10 border border-green-500/20 px-4 py-3 rounded-lg flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4" />{actionSuccess}
-                    </motion.div>
-                  )}
-                  {usersError && (
-                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-4 text-sm text-destructive bg-destructive/10 border border-destructive/20 px-4 py-3 rounded-lg flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4" />{usersError}
-                    </motion.div>
-                  )}
-
-                  {/* Filters */}
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search by name or email..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                    <Select value={userFilter} onValueChange={setUserFilter}>
-                      <SelectTrigger className="w-44">
-                        <SelectValue placeholder="Filter" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Users</SelectItem>
-                        <SelectItem value="confirmed">Confirmed</SelectItem>
-                        <SelectItem value="unconfirmed">Unconfirmed</SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
 
-                  {usersLoading ? (
-                    <div className="flex items-center justify-center py-12">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                  {/* Recent Users */}
+                  <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
+                    <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">
+                      <span className="font-semibold text-sm">Recent Users</span>
+                      <button onClick={() => setActiveTab('users')} className="text-xs text-violet-400 hover:text-violet-300 flex items-center gap-1">View all <ChevronRight size={12} /></button>
                     </div>
-                  ) : (
-                    <div className="rounded-lg border">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>User</TableHead>
-                            <TableHead>Email Status</TableHead>
-                            <TableHead>Joined</TableHead>
-                            <TableHead>Last Sign In</TableHead>
-                            <TableHead>Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredUsers.length === 0 ? (
-                            <TableRow>
-                              <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                                No users found
-                              </TableCell>
-                            </TableRow>
-                          ) : (
-                            filteredUsers.map((user) => (
-                              <TableRow key={user.id}>
-                                <TableCell>
-                                  <div>
-                                    <p className="font-medium">{user.user_metadata?.full_name || '—'}</p>
-                                    <p className="text-xs text-muted-foreground">{user.email}</p>
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  {user.email_confirmed_at ? (
-                                    <Badge variant="default" className="bg-green-500/15 text-green-500 border-green-500/20">
-                                      <UserCheck className="w-3 h-3 mr-1" />Confirmed
-                                    </Badge>
-                                  ) : (
-                                    <Badge variant="destructive" className="bg-orange-500/15 text-orange-400 border-orange-500/20">
-                                      <Mail className="w-3 h-3 mr-1" />Unconfirmed
-                                    </Badge>
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-muted-foreground text-sm">
-                                  {new Date(user.created_at).toLocaleDateString()}
-                                </TableCell>
-                                <TableCell className="text-muted-foreground text-sm">
-                                  {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : '—'}
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-2">
-                                    {!user.email_confirmed_at && (
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => confirmEmail(user.id)}
-                                        disabled={actionLoading === user.id + '_confirm'}
-                                        className="text-green-500 border-green-500/30 hover:bg-green-500/10"
-                                      >
-                                        {actionLoading === user.id + '_confirm' ? (
-                                          <RefreshCw className="w-3 h-3 animate-spin" />
-                                        ) : (
-                                          <><UserCheck className="w-3 h-3 mr-1" />Confirm</>
-                                        )}
-                                      </Button>
-                                    )}
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => deleteUser(user.id, user.email)}
-                                      disabled={actionLoading === user.id + '_delete'}
-                                      className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                                    >
-                                      {actionLoading === user.id + '_delete' ? (
-                                        <RefreshCw className="w-3 h-3 animate-spin" />
-                                      ) : (
-                                        <><Trash2 className="w-3 h-3 mr-1" />Delete</>
-                                      )}
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))
-                          )}
-                        </TableBody>
-                      </Table>
+                    <div className="divide-y divide-white/5">
+                      {users.slice(0, 5).map(user => (
+                        <div key={user.id} className="px-5 py-3 flex items-center gap-3 hover:bg-white/[0.02]">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500/30 to-indigo-500/30 flex items-center justify-center text-xs font-bold text-violet-300 flex-shrink-0">
+                            {(user.user_metadata?.full_name || user.email || '?')[0].toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{user.user_metadata?.full_name || user.email}</p>
+                            <p className="text-xs text-white/30 truncate">{user.email}</p>
+                          </div>
+                          {user.email_confirmed_at
+                            ? <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400">confirmed</span>
+                            : <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400">pending</span>
+                          }
+                        </div>
+                      ))}
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* ITEMS TAB */}
-            <TabsContent value="items" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Item Management</CardTitle>
-                  <CardDescription>Monitor and manage lost and found items</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input placeholder="Search items..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
-                    </div>
-                    <Select value={filterStatus} onValueChange={setFilterStatus}>
-                      <SelectTrigger className="w-40"><SelectValue placeholder="Status" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="matched">Matched</SelectItem>
-                        <SelectItem value="resolved">Resolved</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={filterCategory} onValueChange={setFilterCategory}>
-                      <SelectTrigger className="w-40"><SelectValue placeholder="Category" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
-                        {ITEM_CATEGORIES.map((cat) => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
                   </div>
-                  <div className="rounded-lg border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Item</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Category</TableHead>
-                          <TableHead>Location</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Date</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredItems.map((item) => (
-                          <TableRow key={item.id}>
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <img src={item.imageUrl} alt={item.title} className="w-12 h-12 rounded-lg object-cover" />
-                                <div>
-                                  <p className="font-medium">{item.title}</p>
-                                  <p className="text-xs text-muted-foreground line-clamp-1">{item.description}</p>
-                                </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* USERS */}
+            {activeTab === 'users' && (
+              <motion.div key="users" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-5">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="relative flex-1 min-w-48">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+                    <input value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="Search users..." className="w-full pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-white/25 focus:outline-none focus:border-violet-500/50" />
+                  </div>
+                  {(['all', 'confirmed', 'unconfirmed'] as const).map(f => (
+                    <button key={f} onClick={() => setUserFilter(f)} className={`px-3 py-2 rounded-xl text-xs font-medium capitalize transition-all ${userFilter === f ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30' : 'bg-white/5 text-white/40 border border-white/10 hover:text-white/70'}`}>{f}</button>
+                  ))}
+                </div>
+
+                <div className="rounded-2xl border border-white/5 overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-white/[0.03] border-b border-white/5">
+                        <th className="text-left px-5 py-3 text-xs font-medium text-white/40">User</th>
+                        <th className="text-left px-5 py-3 text-xs font-medium text-white/40">Status</th>
+                        <th className="text-left px-5 py-3 text-xs font-medium text-white/40">Joined</th>
+                        <th className="text-left px-5 py-3 text-xs font-medium text-white/40">Last Sign In</th>
+                        <th className="text-right px-5 py-3 text-xs font-medium text-white/40">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {usersLoading ? (
+                        <tr><td colSpan={5} className="text-center py-12"><div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto" /></td></tr>
+                      ) : filteredUsers.length === 0 ? (
+                        <tr><td colSpan={5} className="text-center py-12 text-white/25">No users found</td></tr>
+                      ) : filteredUsers.map(user => (
+                        <tr key={user.id} className="hover:bg-white/[0.02]">
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500/30 to-indigo-500/30 flex items-center justify-center text-xs font-bold text-violet-300 flex-shrink-0">
+                                {(user.user_metadata?.full_name || user.email || '?')[0].toUpperCase()}
                               </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={item.itemType === 'lost' ? 'destructive' : 'default'}>{item.itemType}</Badge>
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">{item.category}</TableCell>
-                            <TableCell className="text-muted-foreground">{item.location.name}</TableCell>
-                            <TableCell>
-                              <Badge variant={item.status === 'active' ? 'secondary' : item.status === 'matched' ? 'default' : 'outline'}>
-                                {item.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {item.itemType === 'lost' ? item.dateLost.toLocaleDateString() : item.dateFound.toLocaleDateString()}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                              <div>
+                                <p className="font-medium text-white/90">{user.user_metadata?.full_name || '—'}</p>
+                                <p className="text-xs text-white/35">{user.email}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-5 py-3.5">
+                            {user.email_confirmed_at
+                              ? <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"><UserCheck size={11} />Confirmed</span>
+                              : <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/20"><Mail size={11} />Pending</span>
+                            }
+                          </td>
+                          <td className="px-5 py-3.5 text-white/35 text-xs">{new Date(user.created_at).toLocaleDateString()}</td>
+                          <td className="px-5 py-3.5 text-white/35 text-xs">{user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : '—'}</td>
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center justify-end gap-2">
+                              {!user.email_confirmed_at && (
+                                <button onClick={() => confirmEmail(user.id)} disabled={actionLoading === user.id + '_confirm'} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all disabled:opacity-50">
+                                  {actionLoading === user.id + '_confirm' ? <RefreshCw size={11} className="animate-spin" /> : <UserCheck size={11} />}Confirm
+                                </button>
+                              )}
+                              <button onClick={() => deleteUser(user.id, user.email)} disabled={actionLoading === user.id + '_delete'} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all disabled:opacity-50">
+                                {actionLoading === user.id + '_delete' ? <RefreshCw size={11} className="animate-spin" /> : <Trash2 size={11} />}Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </motion.div>
+            )}
 
-            {/* MATCHES TAB */}
-            <TabsContent value="matches" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>AI Match Management</CardTitle>
-                  <CardDescription>Monitor AI-generated matches and confidence scores</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-4 mb-6">
-                    <Select value={filterStatus} onValueChange={setFilterStatus}>
-                      <SelectTrigger className="w-40"><SelectValue placeholder="Status" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="contacted">Contacted</SelectItem>
-                        <SelectItem value="confirmed">Confirmed</SelectItem>
-                        <SelectItem value="rejected">Rejected</SelectItem>
-                      </SelectContent>
-                    </Select>
+            {/* ITEMS */}
+            {activeTab === 'items' && (
+              <motion.div key="items" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-5">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="relative flex-1 min-w-48">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+                    <input value={itemSearch} onChange={e => setItemSearch(e.target.value)} placeholder="Search items..." className="w-full pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-white/25 focus:outline-none focus:border-violet-500/50" />
                   </div>
-                  <div className="rounded-lg border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Match ID</TableHead>
-                          <TableHead>Confidence</TableHead>
-                          <TableHead>Breakdown</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Created</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredMatches.map((match) => {
-                          const lostItem = mockLostItems.find((i) => i.id === match.lostItemId);
-                          const foundItem = mockFoundItems.find((i) => i.id === match.foundItemId);
-                          return (
-                            <TableRow key={match.id}>
-                              <TableCell>
-                                <p className="font-medium text-sm">{match.id}</p>
-                                <p className="text-xs text-muted-foreground">{lostItem?.title} ↔ {foundItem?.title}</p>
-                              </TableCell>
-                              <TableCell>
-                                <div className="text-sm font-bold">{Math.round(match.confidenceScore * 100)}%</div>
-                                <div className="w-16 bg-muted rounded-full h-1.5 mt-1">
-                                  <div className="bg-accent h-1.5 rounded-full" style={{ width: `${match.confidenceScore * 100}%` }} />
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="space-y-1 text-xs">
-                                  {[
-                                    ['Image', match.breakdown.imageSimilarity],
-                                    ['Text', match.breakdown.textSimilarity],
-                                    ['Location', match.breakdown.locationProximity],
-                                    ['Time', match.breakdown.timeProximity],
-                                  ].map(([label, val]) => (
-                                    <div key={label as string} className="flex justify-between">
-                                      <span className="text-muted-foreground">{label}:</span>
-                                      <span className="font-medium">{Math.round((val as number) * 100)}%</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant={match.status === 'confirmed' ? 'default' : match.status === 'rejected' ? 'destructive' : 'secondary'}>
-                                  {match.status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-muted-foreground">{match.createdAt.toLocaleString()}</TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-              <Alert>
-                <Mail className="h-4 w-4" />
-                <AlertDescription>
-                  Email notifications are automatically sent when match confidence exceeds 80%. {stats.highConfidenceMatches} high-confidence matches have been generated.
-                </AlertDescription>
-              </Alert>
-            </TabsContent>
-          </Tabs>
-        </motion.div>
+                  {(['all', 'lost', 'found'] as const).map(f => (
+                    <button key={f} onClick={() => setItemTypeFilter(f)} className={`px-3 py-2 rounded-xl text-xs font-medium capitalize transition-all ${itemTypeFilter === f ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30' : 'bg-white/5 text-white/40 border border-white/10 hover:text-white/70'}`}>{f}</button>
+                  ))}
+                </div>
+
+                <div className="rounded-2xl border border-white/5 overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-white/[0.03] border-b border-white/5">
+                        <th className="text-left px-5 py-3 text-xs font-medium text-white/40">Item</th>
+                        <th className="text-left px-5 py-3 text-xs font-medium text-white/40">Type</th>
+                        <th className="text-left px-5 py-3 text-xs font-medium text-white/40">Category</th>
+                        <th className="text-left px-5 py-3 text-xs font-medium text-white/40">Location</th>
+                        <th className="text-left px-5 py-3 text-xs font-medium text-white/40">Status</th>
+                        <th className="text-right px-5 py-3 text-xs font-medium text-white/40">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {itemsLoading ? (
+                        <tr><td colSpan={6} className="text-center py-12"><div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto" /></td></tr>
+                      ) : filteredItems.length === 0 ? (
+                        <tr><td colSpan={6} className="text-center py-12 text-white/25">No items found</td></tr>
+                      ) : filteredItems.map(item => (
+                        <tr key={item.id} className="hover:bg-white/[0.02]">
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-lg bg-white/5 overflow-hidden flex-shrink-0">
+                                {item.image_url ? <img src={item.image_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Image size={14} className="text-white/20" /></div>}
+                              </div>
+                              <div>
+                                <p className="font-medium text-white/90">{item.title}</p>
+                                <p className="text-xs text-white/30 line-clamp-1">{item.description}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <span className={`text-xs px-2.5 py-1 rounded-full font-medium border ${item.type === 'lost' ? 'bg-red-500/15 text-red-400 border-red-500/20' : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20'}`}>{item.type}</span>
+                          </td>
+                          <td className="px-5 py-3.5 text-white/40 text-xs">{item.category}</td>
+                          <td className="px-5 py-3.5 text-white/40 text-xs"><span className="flex items-center gap-1"><MapPin size={10} />{item.location_name || '—'}</span></td>
+                          <td className="px-5 py-3.5">
+                            <select value={item.status} onChange={e => updateItemStatus(item.id, e.target.value)} className="bg-white/5 border border-white/10 text-xs text-white/70 rounded-lg px-2 py-1 focus:outline-none focus:border-violet-500/50 cursor-pointer">
+                              <option value="active">active</option>
+                              <option value="matched">matched</option>
+                              <option value="resolved">resolved</option>
+                            </select>
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <div className="flex justify-end">
+                              <button onClick={() => deleteItem(item.id)} disabled={actionLoading === item.id + '_item'} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all disabled:opacity-50">
+                                {actionLoading === item.id + '_item' ? <RefreshCw size={11} className="animate-spin" /> : <Trash2 size={11} />}Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </motion.div>
+            )}
+
+          </AnimatePresence>
+        </main>
       </div>
     </div>
   );
