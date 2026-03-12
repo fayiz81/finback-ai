@@ -26,12 +26,11 @@ export default function Submit() {
       description: formData.description,
       category: formData.category,
       type: itemType,
-      status: 'active',
+      status: itemType, // ✅ Fixed: must be 'lost' or 'found' per CHECK constraint
       user_id: user.id,
       location_name: formData.location?.name || '',
       location_lat: formData.location?.lat || 0,
       location_lng: formData.location?.lng || 0,
-      // ✅ Fixed: separate columns instead of date_lost_found
       ...(itemType === 'lost'
         ? { date_lost: formData.date?.toISOString() || new Date().toISOString() }
         : { date_found: formData.date?.toISOString() || new Date().toISOString() }),
