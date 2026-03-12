@@ -1,427 +1,312 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useItems } from '@/hooks/useItems';
-import { MatchResult } from '@/lib/index';
-import { MatchCard } from '@/components/ItemCards';
-import { AIMatchingEngine, ConfidenceBreakdown } from '@/components/AIMatchingEngine';
+import { AIMatchingEngine } from '@/components/AIMatchingEngine';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Sparkles, TrendingUp, Clock, CheckCircle2, XCircle, Mail, Filter, Search } from 'lucide-react';
+import { Sparkles, TrendingUp, Clock, CheckCircle2, MapPin, Calendar, Filter, Search, Image as ImageIcon } from 'lucide-react';
+import { calculateMatchScore, getDistanceInKm, getDaysDifference, normalizeScore } from '@/lib/index';
 
-const springPresets = {
-  gentle: { type: 'spring' as const, stiffness: 300, damping: 35 },
-  snappy: { type: 'spring' as const, stiffness: 400, damping: 30 },
-};
+const spring = { type: 'spring' as const, stiffness: 300, damping: 35 };
 
-const fadeInUp = {
-  initial: { opacity: 0, y: 24 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -24 },
-};
+// ── Build matches from real lost + found items ──────────────────────────────
+function buildMatches(lostItems: any[], foundItems: any[]) {
+  const results: any[] = [];
 
-const staggerContainer = {
-  animate: {
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
+  for (const lost of lostItems) {
+    for (const found of foundItems) {
+      // Text similarity: category match + keyword overlap
+      const sameCategory = lost.category === found.category ? 0.8 : 0.2;
+      const lostWords = (lost.title + ' ' + lost.description).toLowerCase().split(/\s+/);
+      const foundWords = (found.title + ' ' + found.description).toLowerCase().split(/\s+/);
+      const shared = lostWords.filter((w) => w.length > 3 && foundWords.includes(w)).length;
+      const textSim = Math.min(1, sameCategory * 0.5 + (shared / Math.max(lostWords.length, 1)) * 0.5);
 
-const staggerItem = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-};
+      // Location proximity
+      const locationProx = normalizeScore(
+        getDistanceInKm(
+          lost.location_lat || 0,
+          lost.location_lng || 0,
+          found.location_lat || 0,
+          found.location_lng || 0
+        ),
+        10 // 10km max range
+      );
 
+      // Time proximity
+      const lostDate = new Date(lost.date_lost || lost.created_at);
+      const foundDate = new Date(found.date_found || found.created_at);
+      const timeProx = normalizeScore(getDaysDifference(lostDate, foundDate), 30);
+
+      // Image similarity: 0.5 baseline (no real vision here), boosted by category
+      const imageSim = sameCategory === 0.8 ? 0.65 : 0.3;
+
+      const score = calculateMatchScore(imageSim, textSim, locationProx, timeProx);
+
+      // Only surface matches above 30% confidence
+      if (score >= 0.3) {
+        results.push({
+          id: `${lost.id}-${found.id}`,
+          lostItem: lost,
+          foundItem: found,
+          confidenceScore: score,
+          breakdown: {
+            imageSimilarity: imageSim,
+            textSimilarity: textSim,
+            locationProximity: locationProx,
+            timeProximity: timeProx,
+          },
+          status: 'pending',
+          createdAt: new Date(),
+        });
+      }
+    }
+  }
+
+  // Sort by confidence descending
+  return results.sort((a, b) => b.confidenceScore - a.confidenceScore);
+}
+
+// ── Match card ───────────────────────────────────────────────────────────────
+function MatchRow({ match }: { match: any }) {
+  const { lostItem, foundItem, confidenceScore, breakdown } = match;
+  const pct = Math.round(confidenceScore * 100);
+  const isHigh = confidenceScore > 0.7;
+
+  return (
+    <Card className="border-border/50 hover:border-primary/30 transition-all duration-200">
+      <CardContent className="p-5">
+        <div className="flex flex-col lg:flex-row gap-5">
+
+          {/* Lost item */}
+          <div className="flex-1 space-y-2">
+            <Badge variant="outline" className="text-red-400 border-red-400/30 bg-red-400/10 text-xs">Lost</Badge>
+            <div className="flex gap-3 items-start">
+              {lostItem.image_url ? (
+                <img src={lostItem.image_url} alt={lostItem.title} className="w-14 h-14 rounded-lg object-cover flex-shrink-0 border border-border" />
+              ) : (
+                <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                  <ImageIcon className="w-5 h-5 text-muted-foreground" />
+                </div>
+              )}
+              <div>
+                <p className="font-semibold text-sm">{lostItem.title}</p>
+                <p className="text-xs text-muted-foreground line-clamp-2">{lostItem.description}</p>
+                <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                  <MapPin className="w-3 h-3" />
+                  {lostItem.location_name || 'Unknown location'}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Confidence score */}
+          <div className="flex flex-col items-center justify-center px-4 gap-2">
+            <div className={`text-2xl font-bold font-mono ${isHigh ? 'text-emerald-400' : 'text-amber-400'}`}>
+              {pct}%
+            </div>
+            <div className="text-xs text-muted-foreground">match</div>
+            {/* Mini breakdown */}
+            <div className="w-24 space-y-1">
+              {[
+                { label: '🖼️', val: breakdown.imageSimilarity },
+                { label: '📝', val: breakdown.textSimilarity },
+                { label: '📍', val: breakdown.locationProximity },
+                { label: '🕐', val: breakdown.timeProximity },
+              ].map((b, i) => (
+                <div key={i} className="flex items-center gap-1">
+                  <span className="text-[10px] w-4">{b.label}</span>
+                  <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${isHigh ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                      style={{ width: `${Math.round(b.val * 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-[9px] font-mono text-muted-foreground w-6">{Math.round(b.val * 100)}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Found item */}
+          <div className="flex-1 space-y-2">
+            <Badge variant="outline" className="text-emerald-400 border-emerald-400/30 bg-emerald-400/10 text-xs">Found</Badge>
+            <div className="flex gap-3 items-start">
+              {foundItem.image_url ? (
+                <img src={foundItem.image_url} alt={foundItem.title} className="w-14 h-14 rounded-lg object-cover flex-shrink-0 border border-border" />
+              ) : (
+                <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                  <ImageIcon className="w-5 h-5 text-muted-foreground" />
+                </div>
+              )}
+              <div>
+                <p className="font-semibold text-sm">{foundItem.title}</p>
+                <p className="text-xs text-muted-foreground line-clamp-2">{foundItem.description}</p>
+                <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                  <MapPin className="w-3 h-3" />
+                  {foundItem.location_name || 'Unknown location'}
+                </div>
+                <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground">
+                  <Calendar className="w-3 h-3" />
+                  {new Date(foundItem.date_found || foundItem.created_at).toLocaleDateString()}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Page ─────────────────────────────────────────────────────────────────────
 export default function Matches() {
-  const { matches, isProcessingMatch, updateMatchStatus } = useItems();
-  const [selectedMatch, setSelectedMatch] = useState<MatchResult | null>(null);
+  const { lostItems, foundItems, isProcessingMatch, loading } = useItems();
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('confidence');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredMatches = useMemo(() => {
-    let filtered = [...matches];
+  const allMatches = useMemo(() => buildMatches(lostItems, foundItems), [lostItems, foundItems]);
 
-    if (filterStatus !== 'all') {
-      filtered = filtered.filter((match) => match.status === filterStatus);
-    }
+  const filteredMatches = useMemo(() => {
+    let list = [...allMatches];
 
     if (searchQuery) {
-      filtered = filtered.filter((match) =>
-        match.id.toLowerCase().includes(searchQuery.toLowerCase())
+      list = list.filter((m) =>
+        m.lostItem.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        m.foundItem.title.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
-    filtered.sort((a, b) => {
-      if (sortBy === 'confidence') {
-        return b.confidenceScore - a.confidenceScore;
-      } else if (sortBy === 'date') {
-        return b.createdAt.getTime() - a.createdAt.getTime();
-      }
-      return 0;
-    });
+    if (sortBy === 'confidence') {
+      list.sort((a, b) => b.confidenceScore - a.confidenceScore);
+    } else {
+      list.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    }
 
-    return filtered;
-  }, [matches, filterStatus, sortBy, searchQuery]);
+    return list;
+  }, [allMatches, searchQuery, sortBy]);
 
-  const stats = useMemo(() => {
-    const total = matches.length;
-    const highConfidence = matches.filter((m) => m.confidenceScore > 0.8).length;
-    const pending = matches.filter((m) => m.status === 'pending').length;
-    const confirmed = matches.filter((m) => m.status === 'confirmed').length;
+  const stats = useMemo(() => ({
+    total: allMatches.length,
+    highConfidence: allMatches.filter((m) => m.confidenceScore > 0.7).length,
+    pending: allMatches.length,
+    confirmed: 0,
+  }), [allMatches]);
 
-    return { total, highConfidence, pending, confirmed };
-  }, [matches]);
-
-  const handleContact = (match: MatchResult) => {
-    updateMatchStatus(match.id, 'contacted');
-    setSelectedMatch(match);
-  };
-
-  const handleConfirm = (matchId: string) => {
-    updateMatchStatus(matchId, 'confirmed');
-  };
-
-  const handleReject = (matchId: string) => {
-    updateMatchStatus(matchId, 'rejected');
-  };
+  // Convert to MatchResult shape for AIMatchingEngine component
+  const matchResultShape = filteredMatches.map((m) => ({
+    id: m.id,
+    lostItemId: m.lostItem.id,
+    foundItemId: m.foundItem.id,
+    confidenceScore: m.confidenceScore,
+    breakdown: m.breakdown,
+    status: 'pending' as const,
+    createdAt: m.createdAt,
+  }));
 
   return (
     <div className="min-h-screen bg-background">
       <div className="w-full px-4 py-12">
-        <motion.div
-          initial="initial"
-          animate="animate"
-          variants={fadeInUp}
-          transition={springPresets.gentle}
-          className="max-w-7xl mx-auto"
-        >
-          <div className="mb-12">
-            <div className="flex items-center gap-3 mb-4">
+        <div className="max-w-7xl mx-auto">
+
+          {/* Header */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={spring} className="mb-10">
+            <div className="flex items-center gap-3 mb-2">
               <div className="p-3 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20">
                 <Sparkles className="w-8 h-8 text-primary" />
               </div>
               <div>
                 <h1 className="text-4xl font-bold tracking-tight">AI Matches</h1>
-                <p className="text-muted-foreground mt-1">
-                  Smart matching powered by advanced AI algorithms
-                </p>
+                <p className="text-muted-foreground mt-1">Smart matching powered by advanced AI algorithms</p>
               </div>
             </div>
+          </motion.div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+            {[
+              { label: 'Total Matches', value: stats.total, icon: TrendingUp },
+              { label: 'High Confidence', value: stats.highConfidence, icon: Sparkles, highlight: true },
+              { label: 'Pending', value: stats.pending, icon: Clock },
+              { label: 'Confirmed', value: stats.confirmed, icon: CheckCircle2 },
+            ].map((s, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ ...spring, delay: i * 0.07 }}>
+                <Card className="border-border/50">
+                  <CardHeader className="pb-2 pt-4 px-4">
+                    <CardDescription className="flex items-center gap-2 text-xs">
+                      <s.icon className="w-3.5 h-3.5" /> {s.label}
+                    </CardDescription>
+                    <CardTitle className={`text-3xl font-bold ${s.highlight ? 'text-primary' : ''}`}>{s.value}</CardTitle>
+                  </CardHeader>
+                </Card>
+              </motion.div>
+            ))}
           </div>
 
-          <motion.div
-            variants={staggerContainer}
-            className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12"
-          >
-            <motion.div variants={staggerItem}>
-              <Card className="border-border/50 shadow-lg shadow-primary/5">
-                <CardHeader className="pb-3">
-                  <CardDescription className="flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4" />
-                    Total Matches
-                  </CardDescription>
-                  <CardTitle className="text-3xl font-bold">{stats.total}</CardTitle>
-                </CardHeader>
-              </Card>
-            </motion.div>
+          {/* AI Engine status */}
+          <div className="mb-8">
+            <AIMatchingEngine isProcessing={loading || isProcessingMatch} matches={matchResultShape} />
+          </div>
 
-            <motion.div variants={staggerItem}>
-              <Card className="border-border/50 shadow-lg shadow-accent/5">
-                <CardHeader className="pb-3">
-                  <CardDescription className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4" />
-                    High Confidence
-                  </CardDescription>
-                  <CardTitle className="text-3xl font-bold text-accent">
-                    {stats.highConfidence}
-                  </CardTitle>
-                </CardHeader>
-              </Card>
-            </motion.div>
-
-            <motion.div variants={staggerItem}>
-              <Card className="border-border/50 shadow-lg shadow-primary/5">
-                <CardHeader className="pb-3">
-                  <CardDescription className="flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    Pending
-                  </CardDescription>
-                  <CardTitle className="text-3xl font-bold">{stats.pending}</CardTitle>
-                </CardHeader>
-              </Card>
-            </motion.div>
-
-            <motion.div variants={staggerItem}>
-              <Card className="border-border/50 shadow-lg shadow-primary/5">
-                <CardHeader className="pb-3">
-                  <CardDescription className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4" />
-                    Confirmed
-                  </CardDescription>
-                  <CardTitle className="text-3xl font-bold text-primary">
-                    {stats.confirmed}
-                  </CardTitle>
-                </CardHeader>
-              </Card>
-            </motion.div>
-          </motion.div>
-
-          <AIMatchingEngine isProcessing={isProcessingMatch} matches={filteredMatches} />
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ ...springPresets.gentle, delay: 0.2 }}
-            className="mt-12"
-          >
-            <Card className="border-border/50 shadow-xl shadow-primary/5">
-              <CardHeader>
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div>
-                    <CardTitle className="text-2xl">Match Results</CardTitle>
-                    <CardDescription className="mt-1">
-                      Review and manage your AI-generated matches
-                    </CardDescription>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <div className="relative flex-1 md:flex-initial md:w-64">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search matches..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-9"
-                      />
-                    </div>
-                    <Select value={filterStatus} onValueChange={setFilterStatus}>
-                      <SelectTrigger className="w-[140px]">
-                        <Filter className="w-4 h-4 mr-2" />
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="contacted">Contacted</SelectItem>
-                        <SelectItem value="confirmed">Confirmed</SelectItem>
-                        <SelectItem value="rejected">Rejected</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={sortBy} onValueChange={setSortBy}>
-                      <SelectTrigger className="w-[160px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="confidence">By Confidence</SelectItem>
-                        <SelectItem value="date">By Date</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+          {/* Results */}
+          <Card className="border-border/50">
+            <CardHeader>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <CardTitle className="text-2xl">Match Results</CardTitle>
+                  <CardDescription className="mt-1">Review and manage your AI-generated matches</CardDescription>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="all" className="w-full">
-                  <TabsList className="grid w-full grid-cols-4 mb-6">
-                    <TabsTrigger value="all">All Matches</TabsTrigger>
-                    <TabsTrigger value="high">High Confidence</TabsTrigger>
-                    <TabsTrigger value="pending">Pending</TabsTrigger>
-                    <TabsTrigger value="history">History</TabsTrigger>
-                  </TabsList>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="relative w-56">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input placeholder="Search matches..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
+                  </div>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="w-[160px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="confidence">By Confidence</SelectItem>
+                      <SelectItem value="date">By Date</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <AnimatePresence mode="popLayout">
+                {loading ? (
+                  <div className="text-center py-12 text-muted-foreground">Loading matches...</div>
+                ) : filteredMatches.length === 0 ? (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
+                      <Sparkles className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-semibold mb-2">No matches found yet</h3>
+                    <p className="text-muted-foreground text-sm">Submit lost and found items to start AI matching</p>
+                  </motion.div>
+                ) : (
+                  filteredMatches.map((match, index) => (
+                    <motion.div
+                      key={match.id}
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.97 }}
+                      transition={{ ...spring, delay: index * 0.04 }}
+                    >
+                      <MatchRow match={match} />
+                    </motion.div>
+                  ))
+                )}
+              </AnimatePresence>
+            </CardContent>
+          </Card>
 
-                  <TabsContent value="all" className="space-y-6">
-                    <AnimatePresence mode="popLayout">
-                      {filteredMatches.length === 0 ? (
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="text-center py-12"
-                        >
-                          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
-                            <Sparkles className="w-8 h-8 text-muted-foreground" />
-                          </div>
-                          <h3 className="text-lg font-semibold mb-2">No matches found</h3>
-                          <p className="text-muted-foreground">
-                            Try adjusting your filters or submit more items
-                          </p>
-                        </motion.div>
-                      ) : (
-                        filteredMatches.map((match, index) => (
-                          <motion.div
-                            key={match.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            transition={{ ...springPresets.gentle, delay: index * 0.05 }}
-                          >
-                            <Card className="border-border/50 hover:border-primary/50 transition-all duration-200 shadow-md hover:shadow-lg hover:shadow-primary/10">
-                              <CardContent className="p-6">
-                                <div className="flex flex-col lg:flex-row gap-6">
-                                  <div className="flex-1">
-                                    <MatchCard match={match} onContact={() => handleContact(match)} />
-                                  </div>
-                                  <div className="lg:w-80">
-                                    <ConfidenceBreakdown match={match} />
-                                    <div className="mt-6 flex flex-wrap gap-3">
-                                      {match.status === 'pending' && (
-                                        <>
-                                          <Button
-                                            onClick={() => handleContact(match)}
-                                            className="flex-1"
-                                          >
-                                            <Mail className="w-4 h-4 mr-2" />
-                                            Contact
-                                          </Button>
-                                          <Button
-                                            variant="outline"
-                                            onClick={() => handleReject(match.id)}
-                                            className="flex-1"
-                                          >
-                                            <XCircle className="w-4 h-4 mr-2" />
-                                            Dismiss
-                                          </Button>
-                                        </>
-                                      )}
-                                      {match.status === 'contacted' && (
-                                        <>
-                                          <Button
-                                            onClick={() => handleConfirm(match.id)}
-                                            className="flex-1"
-                                          >
-                                            <CheckCircle2 className="w-4 h-4 mr-2" />
-                                            Confirm Match
-                                          </Button>
-                                          <Button
-                                            variant="outline"
-                                            onClick={() => handleReject(match.id)}
-                                            className="flex-1"
-                                          >
-                                            <XCircle className="w-4 h-4 mr-2" />
-                                            Not a Match
-                                          </Button>
-                                        </>
-                                      )}
-                                      {match.status === 'confirmed' && (
-                                        <Badge className="w-full justify-center py-2 bg-primary/10 text-primary border-primary/20">
-                                          <CheckCircle2 className="w-4 h-4 mr-2" />
-                                          Match Confirmed
-                                        </Badge>
-                                      )}
-                                      {match.status === 'rejected' && (
-                                        <Badge
-                                          variant="outline"
-                                          className="w-full justify-center py-2 text-muted-foreground"
-                                        >
-                                          <XCircle className="w-4 h-4 mr-2" />
-                                          Dismissed
-                                        </Badge>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </motion.div>
-                        ))
-                      )}
-                    </AnimatePresence>
-                  </TabsContent>
-
-                  <TabsContent value="high" className="space-y-6">
-                    <AnimatePresence mode="popLayout">
-                      {filteredMatches
-                        .filter((m) => m.confidenceScore > 0.8)
-                        .map((match, index) => (
-                          <motion.div
-                            key={match.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            transition={{ ...springPresets.gentle, delay: index * 0.05 }}
-                          >
-                            <Card className="border-accent/50 shadow-lg shadow-accent/10">
-                              <CardContent className="p-6">
-                                <div className="flex flex-col lg:flex-row gap-6">
-                                  <div className="flex-1">
-                                    <MatchCard match={match} onContact={() => handleContact(match)} />
-                                  </div>
-                                  <div className="lg:w-80">
-                                    <ConfidenceBreakdown match={match} />
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </motion.div>
-                        ))}
-                    </AnimatePresence>
-                  </TabsContent>
-
-                  <TabsContent value="pending" className="space-y-6">
-                    <AnimatePresence mode="popLayout">
-                      {filteredMatches
-                        .filter((m) => m.status === 'pending')
-                        .map((match, index) => (
-                          <motion.div
-                            key={match.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            transition={{ ...springPresets.gentle, delay: index * 0.05 }}
-                          >
-                            <Card className="border-border/50">
-                              <CardContent className="p-6">
-                                <div className="flex flex-col lg:flex-row gap-6">
-                                  <div className="flex-1">
-                                    <MatchCard match={match} onContact={() => handleContact(match)} />
-                                  </div>
-                                  <div className="lg:w-80">
-                                    <ConfidenceBreakdown match={match} />
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </motion.div>
-                        ))}
-                    </AnimatePresence>
-                  </TabsContent>
-
-                  <TabsContent value="history" className="space-y-6">
-                    <AnimatePresence mode="popLayout">
-                      {filteredMatches
-                        .filter((m) => m.status === 'confirmed' || m.status === 'rejected')
-                        .map((match, index) => (
-                          <motion.div
-                            key={match.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            transition={{ ...springPresets.gentle, delay: index * 0.05 }}
-                          >
-                            <Card className="border-border/50 opacity-75">
-                              <CardContent className="p-6">
-                                <div className="flex flex-col lg:flex-row gap-6">
-                                  <div className="flex-1">
-                                    <MatchCard match={match} />
-                                  </div>
-                                  <div className="lg:w-80">
-                                    <ConfidenceBreakdown match={match} />
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </motion.div>
-                        ))}
-                    </AnimatePresence>
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );
