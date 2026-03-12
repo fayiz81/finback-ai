@@ -31,22 +31,24 @@ export default function Submit() {
       location_name: formData.location?.name || '',
       location_lat: formData.location?.lat || 0,
       location_lng: formData.location?.lng || 0,
-      date_lost_found: formData.date?.toISOString() || new Date().toISOString(),
+      // ✅ Fixed: separate columns instead of date_lost_found
+      ...(itemType === 'lost'
+        ? { date_lost: formData.date?.toISOString() || new Date().toISOString() }
+        : { date_found: formData.date?.toISOString() || new Date().toISOString() }),
     };
 
     try {
       const { data, error } = await createItem(item, formData.imageFile);
 
       if (error) {
-        toast.error('Failed to submit item. Please try again.');
-        console.error(error);
+        console.error('Supabase error:', JSON.stringify(error, null, 2));
+        toast.error(`Failed: ${error.message}`);
         return;
       }
 
       if (data) {
         setSubmitted(true);
         toast.success('Item submitted! AI is now scanning for matches.');
-        // ✅ Navigate to browse after 2 seconds so user sees the new item
         setTimeout(() => {
           navigate(ROUTE_PATHS.BROWSE);
         }, 2000);
