@@ -1,232 +1,115 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Upload, MapPin, Calendar, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { CheckCircle2 } from 'lucide-react';
+import { ItemForm } from '@/components/Forms';
 import { useItems } from '@/hooks/useItems';
-import { ITEM_CATEGORIES } from '@/lib/index';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
-import { springPresets } from '@/lib/motion';
+import { useAuth } from '@/hooks/useAuth';
+import { ROUTE_PATHS } from '@/lib/index';
+import { toast } from 'sonner';
 
 export default function Submit() {
-  const [activeTab, setActiveTab] = useState<'lost' | 'found'>('lost');
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<string>('');
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>('');
-  const [locationName, setLocationName] = useState('');
-  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
-  const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [isGettingLocation, setIsGettingLocation] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
-
+  const [itemType, setItemType] = useState<'lost' | 'found'>('lost');
+  const [submitted, setSubmitted] = useState(false);
+  const { createItem } = useItems();
   const { user } = useAuth();
-  const { createItem, getCurrentLocation } = useItems();
-  const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast({ title: 'File too large', description: 'Please select an image under 5MB', variant: 'destructive' });
+  const handleSubmit = async (formData: any) => {
+    if (!user) {
+      toast.error('You must be logged in to submit an item.');
+      return;
+    }
+
+    const item = {
+      title: formData.title,
+      description: formData.description,
+      category: formData.category,
+      type: itemType,
+      status: 'active',
+      user_id: user.id,
+      location_name: formData.location?.name || '',
+      location_lat: formData.location?.lat || 0,
+      location_lng: formData.location?.lng || 0,
+      date_lost_found: formData.date?.toISOString() || new Date().toISOString(),
+    };
+
+    try {
+      const { data, error } = await createItem(item, formData.imageFile);
+
+      if (error) {
+        toast.error('Failed to submit item. Please try again.');
+        console.error(error);
         return;
       }
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setImagePreview(reader.result as string);
-      reader.readAsDataURL(file);
+
+      if (data) {
+        setSubmitted(true);
+        toast.success('Item submitted! AI is now scanning for matches.');
+        // ✅ Navigate to browse after 2 seconds so user sees the new item
+        setTimeout(() => {
+          navigate(ROUTE_PATHS.BROWSE);
+        }, 2000);
+      }
+    } catch (err) {
+      toast.error('Something went wrong. Please try again.');
+      console.error(err);
     }
   };
 
-  const handleGetLocation = async () => {
-    setIsGettingLocation(true);
-    try {
-      const coords = await getCurrentLocation();
-      setCoordinates(coords);
-      setLocationName(`${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`);
-      toast({ title: 'Location captured', description: 'GPS coordinates have been recorded' });
-    } catch {
-      toast({ title: 'Location error', description: 'Could not get your location. Please enter manually.', variant: 'destructive' });
-    } finally {
-      setIsGettingLocation(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!title || !description || !category || !locationName || !date) {
-      toast({ title: 'Missing information', description: 'Please fill in all required fields', variant: 'destructive' });
-      return;
-    }
-    if (!imageFile) {
-      toast({ title: 'Image required', description: 'Please upload an image of the item', variant: 'destructive' });
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const itemData = {
-        title,
-        description,
-        category,
-        type: activeTab, // 'lost' or 'found'
-        user_id: user?.id || '',
-        location_name: locationName,
-        location_lat: coordinates?.lat || 0,
-        location_lng: coordinates?.lng || 0,
-        date_lost: activeTab === 'lost' ? date : null,
-        date_found: activeTab === 'found' ? date : null,
-        status: 'active',
-      };
-
-      await createItem(itemData, imageFile);
-
-      setSubmitSuccess(true);
-      toast({ title: 'Item submitted successfully!', description: 'AI matching is now processing your item' });
-
-      setTimeout(() => {
-        setTitle('');
-        setDescription('');
-        setCategory('');
-        setImageFile(null);
-        setImagePreview('');
-        setLocationName('');
-        setCoordinates(null);
-        setDate(new Date().toISOString().split('T')[0]);
-        setSubmitSuccess(false);
-      }, 2000);
-    } catch (error) {
-      toast({ title: 'Submission failed', description: error instanceof Error ? error.message : 'Please try again', variant: 'destructive' });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const formFields = (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <Label htmlFor="title">Item Title *</Label>
-        <Input id="title" placeholder="e.g., Black iPhone 14 Pro" value={title} onChange={(e) => setTitle(e.target.value)} required />
+  if (submitted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center space-y-4"
+        >
+          <div className="flex justify-center">
+            <CheckCircle2 className="w-16 h-16 text-primary" />
+          </div>
+          <h2 className="text-2xl font-bold">Item Submitted!</h2>
+          <p className="text-muted-foreground">AI is scanning for matches. Redirecting you to Browse...</p>
+        </motion.div>
       </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="description">Description *</Label>
-        <Textarea id="description" placeholder="Provide detailed description including color, brand, distinctive features..." value={description} onChange={(e) => setDescription(e.target.value)} rows={4} required />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="category">Category *</Label>
-        <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-          <SelectContent>
-            {ITEM_CATEGORIES.map((cat) => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label>Upload Image *</Label>
-        <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors">
-          {imagePreview ? (
-            <div className="space-y-4">
-              <img src={imagePreview} alt="Preview" className="max-h-64 mx-auto rounded-lg object-cover" />
-              <Button type="button" variant="outline" onClick={() => { setImageFile(null); setImagePreview(''); }}>
-                Remove Image
-              </Button>
-            </div>
-          ) : (
-            <label htmlFor="image-upload" className="cursor-pointer block">
-              <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground mb-2">Click to upload or drag and drop</p>
-              <p className="text-xs text-muted-foreground">PNG, JPG up to 5MB</p>
-              <Input id="image-upload" type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-            </label>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="location">Location *</Label>
-        <div className="flex gap-2">
-          <Input id="location" placeholder="Enter location or use GPS" value={locationName} onChange={(e) => setLocationName(e.target.value)} required />
-          <Button type="button" variant="outline" onClick={handleGetLocation} disabled={isGettingLocation}>
-            {isGettingLocation ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
-          </Button>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="date">{activeTab === 'lost' ? 'Date Lost' : 'Date Found'} *</Label>
-        <div className="relative">
-          <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} max={new Date().toISOString().split('T')[0]} required />
-          <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-        </div>
-      </div>
-
-      <Button type="submit" className="w-full" size="lg" disabled={isSubmitting || submitSuccess}>
-        {isSubmitting ? (
-          <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</>
-        ) : submitSuccess ? (
-          <><CheckCircle2 className="w-4 h-4 mr-2" />Submitted Successfully</>
-        ) : (
-          activeTab === 'lost' ? 'Submit Lost Item' : 'Submit Found Item'
-        )}
-      </Button>
-    </div>
-  );
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background py-12">
-      <div className="container mx-auto px-4 max-w-4xl">
-        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={springPresets.gentle}>
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold mb-4">Submit an Item</h1>
-            <p className="text-muted-foreground text-lg">Report a lost or found item and let our AI find matches</p>
+      <div className="container mx-auto px-4 max-w-2xl">
+        <div className="text-center mb-10">
+          <h1 className="text-3xl font-bold mb-2">Submit an Item</h1>
+          <p className="text-muted-foreground">Report a lost or found item and let our AI find matches</p>
+        </div>
+
+        <div className="bg-card border border-border rounded-2xl p-8">
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold mb-1">Item Details</h2>
+            <p className="text-sm text-muted-foreground mb-6">
+              Fill in the information below. Our AI will automatically search for matches.
+            </p>
+
+            {/* Lost / Found toggle */}
+            <div className="grid grid-cols-2 rounded-xl overflow-hidden border border-border mb-6">
+              {(['lost', 'found'] as const).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setItemType(type)}
+                  className={`py-3 text-sm font-semibold transition-all ${
+                    itemType === type
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {type === 'lost' ? 'Lost Item' : 'Found Item'}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle>Item Details</CardTitle>
-              <CardDescription>Fill in the information below. Our AI will automatically search for matches.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'lost' | 'found')}>
-                <TabsList className="grid w-full grid-cols-2 mb-8">
-                  <TabsTrigger value="lost">Lost Item</TabsTrigger>
-                  <TabsTrigger value="found">Found Item</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="lost">
-                  <form onSubmit={handleSubmit}>{formFields}</form>
-                </TabsContent>
-                <TabsContent value="found">
-                  <form onSubmit={handleSubmit}>{formFields}</form>
-                </TabsContent>
-              </Tabs>
-
-              <div className="mt-8 p-4 bg-muted/50 rounded-lg">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-primary mt-0.5" />
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">AI Matching Process</p>
-                    <p className="text-xs text-muted-foreground">
-                      Once submitted, our AI will analyze your item using image recognition, text similarity, location proximity, and time matching. You'll receive email notifications for matches with confidence scores above 80%.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+          <ItemForm type={itemType} onSubmit={handleSubmit} />
+        </div>
       </div>
     </div>
   );
