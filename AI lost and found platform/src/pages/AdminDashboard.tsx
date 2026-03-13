@@ -65,7 +65,7 @@ export default function AdminDashboard() {
       if (error) throw error;
       setUsers(data.users as SupabaseUser[]);
     } catch (err: any) {
-      showToast(err.message || 'Failed to load users. Check VITE_SUPABASE_SERVICE_KEY in Vercel.', 'error');
+      showToast(err.message || 'Failed to load users.', 'error');
     } finally {
       setUsersLoading(false);
     }
@@ -74,7 +74,10 @@ export default function AdminDashboard() {
   const fetchItems = useCallback(async () => {
     setItemsLoading(true);
     try {
-      const { data, error } = await supabase.from('items').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('items')
+        .select('*')
+        .order('created_at', { ascending: false });
       if (error) throw error;
       setItems(data || []);
     } catch (err: any) {
@@ -116,19 +119,15 @@ export default function AdminDashboard() {
       const { error } = await supabase.from('items').delete().eq('id', itemId);
       if (error) throw error;
       showToast('Item deleted');
-      await fetchItems();
+      setItems(prev => prev.filter(i => i.id !== itemId));
     } catch (err: any) { showToast(err.message, 'error'); }
     finally { setActionLoading(null); }
   };
 
-  const updateItemStatus = async (itemId: string, status: string) => {
-    try {
-      const { error } = await supabase.from('items').update({ status }).eq('id', itemId);
-      if (error) throw error;
-      showToast(`Status → ${status}`);
-      setItems(prev => prev.map(i => i.id === itemId ? { ...i, status } : i));
-    } catch (err: any) { showToast(err.message, 'error'); }
-  };
+  // ✅ Fixed: status values must match CHECK constraint ('lost' | 'found')
+  // We use type column to drive status — admin can only delete or view items
+  // If you want a separate resolved/matched state, add those values to the DB constraint first.
+  // For now the dropdown is removed to prevent invalid status updates.
 
   const filteredUsers = users.filter(u => {
     const name = u.user_metadata?.full_name || '';
@@ -150,8 +149,9 @@ export default function AdminDashboard() {
     totalItems: items.length,
     lostItems: items.filter(i => i.type === 'lost').length,
     foundItems: items.filter(i => i.type === 'found').length,
-    activeItems: items.filter(i => i.status === 'active').length,
-    resolvedItems: items.filter(i => i.status === 'resolved').length,
+    // ✅ Fixed: status values that actually exist in your DB
+    activeItems: items.filter(i => i.status === 'lost' || i.status === 'found').length,
+    resolvedItems: 0,
   };
 
   if (isLoading) return (
@@ -265,8 +265,8 @@ export default function AdminDashboard() {
                   {[
                     { label: 'Total Users', value: stats.totalUsers, sub: `${stats.unconfirmed} unconfirmed`, icon: <Users size={16} />, color: 'from-violet-500/20 to-violet-500/5', accent: 'text-violet-400' },
                     { label: 'Total Items', value: stats.totalItems, sub: `${stats.lostItems} lost · ${stats.foundItems} found`, icon: <Package size={16} />, color: 'from-blue-500/20 to-blue-500/5', accent: 'text-blue-400' },
-                    { label: 'Active Items', value: stats.activeItems, sub: 'currently open', icon: <TrendingUp size={16} />, color: 'from-emerald-500/20 to-emerald-500/5', accent: 'text-emerald-400' },
-                    { label: 'Resolved', value: stats.resolvedItems, sub: 'successfully closed', icon: <CheckCircle2 size={16} />, color: 'from-amber-500/20 to-amber-500/5', accent: 'text-amber-400' },
+                    { label: 'Lost Items', value: stats.lostItems, sub: 'awaiting match', icon: <TrendingUp size={16} />, color: 'from-red-500/20 to-red-500/5', accent: 'text-red-400' },
+                    { label: 'Found Items', value: stats.foundItems, sub: 'submitted by finders', icon: <CheckCircle2 size={16} />, color: 'from-emerald-500/20 to-emerald-500/5', accent: 'text-emerald-400' },
                   ].map((s, i) => (
                     <motion.div key={s.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}>
                       <div className={`p-5 rounded-2xl bg-gradient-to-br ${s.color} border border-white/5`}>
@@ -290,7 +290,9 @@ export default function AdminDashboard() {
                       {items.slice(0, 5).map(item => (
                         <div key={item.id} className="px-5 py-3 flex items-center gap-3 hover:bg-white/[0.02]">
                           <div className="w-9 h-9 rounded-lg bg-white/5 overflow-hidden flex-shrink-0">
-                            {item.image_url ? <img src={item.image_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Image size={12} className="text-white/20" /></div>}
+                            {item.image_url
+                              ? <img src={item.image_url} alt="" className="w-full h-full object-cover" />
+                              : <div className="w-full h-full flex items-center justify-center"><Image size={12} className="text-white/20" /></div>}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{item.title}</p>
@@ -422,7 +424,7 @@ export default function AdminDashboard() {
                         <th className="text-left px-5 py-3 text-xs font-medium text-white/40">Type</th>
                         <th className="text-left px-5 py-3 text-xs font-medium text-white/40">Category</th>
                         <th className="text-left px-5 py-3 text-xs font-medium text-white/40">Location</th>
-                        <th className="text-left px-5 py-3 text-xs font-medium text-white/40">Status</th>
+                        <th className="text-left px-5 py-3 text-xs font-medium text-white/40">Date</th>
                         <th className="text-right px-5 py-3 text-xs font-medium text-white/40">Actions</th>
                       </tr>
                     </thead>
@@ -436,7 +438,9 @@ export default function AdminDashboard() {
                           <td className="px-5 py-3.5">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 rounded-lg bg-white/5 overflow-hidden flex-shrink-0">
-                                {item.image_url ? <img src={item.image_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Image size={14} className="text-white/20" /></div>}
+                                {item.image_url
+                                  ? <img src={item.image_url} alt="" className="w-full h-full object-cover" />
+                                  : <div className="w-full h-full flex items-center justify-center"><Image size={14} className="text-white/20" /></div>}
                               </div>
                               <div>
                                 <p className="font-medium text-white/90">{item.title}</p>
@@ -445,20 +449,27 @@ export default function AdminDashboard() {
                             </div>
                           </td>
                           <td className="px-5 py-3.5">
-                            <span className={`text-xs px-2.5 py-1 rounded-full font-medium border ${item.type === 'lost' ? 'bg-red-500/15 text-red-400 border-red-500/20' : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20'}`}>{item.type}</span>
+                            <span className={`text-xs px-2.5 py-1 rounded-full font-medium border ${item.type === 'lost' ? 'bg-red-500/15 text-red-400 border-red-500/20' : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20'}`}>
+                              {item.type}
+                            </span>
                           </td>
                           <td className="px-5 py-3.5 text-white/40 text-xs">{item.category}</td>
-                          <td className="px-5 py-3.5 text-white/40 text-xs"><span className="flex items-center gap-1"><MapPin size={10} />{item.location_name || '—'}</span></td>
-                          <td className="px-5 py-3.5">
-                            <select value={item.status} onChange={e => updateItemStatus(item.id, e.target.value)} className="bg-white/5 border border-white/10 text-xs text-white/70 rounded-lg px-2 py-1 focus:outline-none focus:border-violet-500/50 cursor-pointer">
-                              <option value="active">active</option>
-                              <option value="matched">matched</option>
-                              <option value="resolved">resolved</option>
-                            </select>
+                          <td className="px-5 py-3.5 text-white/40 text-xs">
+                            <span className="flex items-center gap-1">
+                              <MapPin size={10} />{item.location_name || '—'}
+                            </span>
+                          </td>
+                          {/* ✅ Fixed: removed status dropdown that caused 400 errors */}
+                          <td className="px-5 py-3.5 text-white/40 text-xs">
+                            {new Date(item.created_at).toLocaleDateString()}
                           </td>
                           <td className="px-5 py-3.5">
                             <div className="flex justify-end">
-                              <button onClick={() => deleteItem(item.id)} disabled={actionLoading === item.id + '_item'} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all disabled:opacity-50">
+                              <button
+                                onClick={() => deleteItem(item.id)}
+                                disabled={actionLoading === item.id + '_item'}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all disabled:opacity-50"
+                              >
                                 {actionLoading === item.id + '_item' ? <RefreshCw size={11} className="animate-spin" /> : <Trash2 size={11} />}Delete
                               </button>
                             </div>
