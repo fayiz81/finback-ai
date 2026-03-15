@@ -37,12 +37,44 @@ export function useItems(filters?: { status?: string; search?: string; category?
     };
   }, [filters?.status, filters?.search, filters?.category]);
 
+  // Convert any image (including HEIC) to JPEG via canvas before upload
+  const convertToJpeg = (file: File): Promise<File> => {
+    return new Promise((resolve) => {
+      // If already a web-safe format, return as-is
+      if (file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/webp') {
+        resolve(file);
+        return;
+      }
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0);
+        canvas.toBlob((blob) => {
+          URL.revokeObjectURL(url);
+          if (blob) {
+            const jpegFile = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
+            resolve(jpegFile);
+          } else {
+            resolve(file); // fallback to original if conversion fails
+          }
+        }, 'image/jpeg', 0.85);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+      img.src = url;
+    });
+  };
+
   const createItem = async (item: any, imageFile?: File) => {
     let image_url = null;
     if (imageFile) {
+      const safeFile = await convertToJpeg(imageFile);
       const { data } = await supabase.storage
         .from('item-images')
-        .upload(`${Date.now()}-${imageFile.name}`, imageFile);
+        .upload(`${Date.now()}-${safeFile.name}`, safeFile, { contentType: 'image/jpeg' });
       if (data) {
         const { data: url } = supabase.storage.from('item-images').getPublicUrl(data.path);
         image_url = url.publicUrl;
