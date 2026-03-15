@@ -39,6 +39,23 @@ export default function Submit() {
     };
 
     try {
+      // ── Duplicate check: same user, same title, same type submitted before ──
+      const { data: existing } = await supabase
+        .from('items')
+        .select('id, title, type, created_at')
+        .eq('user_id', user.id)
+        .eq('type', itemType)
+        .ilike('title', item.title.trim())
+        .limit(5);
+
+      if (existing && existing.length > 0) {
+        // Already submitted this exact item — delete the old one and replace with new
+        for (const dup of existing) {
+          await supabase.from('items').delete().eq('id', dup.id);
+        }
+        toast.info('Duplicate detected — replacing your previous submission.');
+      }
+
       const { data, error } = await createItem(item, formData.imageFile);
 
       if (error) {
@@ -73,7 +90,7 @@ export default function Submit() {
                 userName: user!.user_metadata?.full_name || user!.email!.split('@')[0],
                 lostTitle: best.lostItem.title,
                 foundTitle: best.foundItem.title,
-                confidence: best.confidenceScore,
+                confidence: best.score,
                 foundLocation: best.foundItem.location_name || '',
                 foundDate: new Date(best.foundItem.date_found || best.foundItem.created_at).toLocaleDateString(),
               });
@@ -82,6 +99,55 @@ export default function Submit() {
         } catch (emailErr) {
           console.error('Email notification failed:', emailErr);
           // Don't block the user flow if email fails
+        }
+
+        // Auto-resolve: if found item matches a lost item at ≥ 85%, mark both as resolved and delete
+        try {
+          const oppositeType2 = itemType === 'lost' ? 'found' : 'lost';
+          const { data: candidates2 } = await supabase
+            .from('items')
+            .select('*')
+            .eq('type', oppositeType2)
+            .limit(100);
+
+          if (candidates2 && candidates2.length > 0) {
+            const newItem2 = data;
+            const lostItems2 = itemType === 'lost' ? [newItem2] : candidates2;
+            const foundItems2 = itemType === 'found' ? [newItem2] : candidates2;
+            const matches2 = buildEnhancedMatches(lostItems2, foundItems2, 0.85);
+
+            if (matches2.length > 0) {
+              const best2 = matches2[0];
+              const matchedItem = itemType === 'found' ? best2.lostItem : best2.foundItem;
+
+              // Delete the matched opposite item (it's been resolved)
+              await supabase.from('items').delete().eq('id', matchedItem.id);
+
+              // Also delete the newly submitted item since it's a duplicate resolution
+              await supabase.from('items').delete().eq('id', newItem2.id);
+
+              // Notify the owner of the matched item that their item was found
+              const { data: { users: allUsers } } = await supabaseAdmin.auth.admin.listUsers();
+              const matchedOwner = allUsers?.find((u: any) => u.id === matchedItem.user_id);
+              if (matchedOwner?.email) {
+                await sendMatchEmail({
+                  toEmail: matchedOwner.email,
+                  userName: matchedOwner.user_metadata?.full_name || matchedOwner.email.split('@')[0],
+                  lostTitle: best2.lostItem.title,
+                  foundTitle: best2.foundItem.title,
+                  confidence: best2.score,
+                  foundLocation: best2.foundItem.location_name || '',
+                  foundDate: new Date(best2.foundItem.date_found || best2.foundItem.created_at).toLocaleDateString(),
+                });
+              }
+
+              toast.success('🎉 Perfect match found! Both items have been resolved automatically.');
+              setTimeout(() => navigate(ROUTE_PATHS.BROWSE), 2500);
+              return;
+            }
+          }
+        } catch (resolveErr) {
+          console.error('Auto-resolve failed:', resolveErr);
         }
 
         setTimeout(() => {
