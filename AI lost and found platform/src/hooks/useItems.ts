@@ -72,11 +72,15 @@ export function useItems(filters?: { status?: string; search?: string; category?
     let image_url = null;
     if (imageFile) {
       const safeFile = await convertToJpeg(imageFile);
-      const { data } = await supabase.storage
+      const fileName = `${Date.now()}-${safeFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('item-images')
-        .upload(`${Date.now()}-${safeFile.name}`, safeFile, { contentType: 'image/jpeg' });
-      if (data) {
-        const { data: url } = supabase.storage.from('item-images').getPublicUrl(data.path);
+        .upload(fileName, safeFile, { contentType: safeFile.type || 'image/jpeg', upsert: false });
+      if (uploadError) {
+        console.error('Image upload error:', uploadError);
+      }
+      if (uploadData) {
+        const { data: url } = supabase.storage.from('item-images').getPublicUrl(uploadData.path);
         image_url = url.publicUrl;
       }
     }
