@@ -5,6 +5,7 @@ import { CheckCircle2 } from 'lucide-react';
 import { ItemForm } from '@/components/Forms';
 import { useItems } from '@/hooks/useItems';
 import { useAuth } from '@/hooks/useAuth';
+import { useMatchNotification } from '@/hooks/useMatchNotification';
 import { ROUTE_PATHS } from '@/lib/index';
 import { toast } from 'sonner';
 
@@ -14,6 +15,7 @@ export default function Submit() {
   const { createItem } = useItems();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { sendMatchNotificationIfFound } = useMatchNotification();
 
   const handleSubmit = async (formData: any) => {
     if (!user) {
@@ -48,6 +50,12 @@ export default function Submit() {
       if (data) {
         setSubmitted(true);
         toast.success('Item submitted! AI is now scanning for matches.');
+
+        // Fire-and-forget: score new item against existing items and email if matched
+        const ownerName =
+          user.user_metadata?.full_name || user.email?.split('@')[0] || 'there';
+        sendMatchNotificationIfFound(data, user.email ?? '', ownerName);
+
         setTimeout(() => {
           navigate(ROUTE_PATHS.BROWSE);
         }, 2000);

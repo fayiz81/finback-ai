@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import emailjs from '@emailjs/browser';
 import { Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
@@ -231,14 +232,66 @@ export default function AdminDashboard() {
 
   const sendNotification = async () => {
     if (!notifSubject || !notifBody) { showToast('Fill in subject and message', 'error'); return; }
+
+    const SERVICE_ID  = import.meta.env.VITE_EMAILJS_SERVICE_ID as string;
+    const PUBLIC_KEY  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY as string;
+    const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_BROADCAST_TEMPLATE_ID as string;
+    const APP_URL     = import.meta.env.VITE_APP_URL || 'https://finback-ai.vercel.app';
+
+    if (!SERVICE_ID || !PUBLIC_KEY || !TEMPLATE_ID) {
+      showToast('EmailJS env vars not set', 'error');
+      return;
+    }
+
     setNotifSending(true);
-    // Simulate send (real implementation needs an Edge Function / email service)
-    await new Promise(r => setTimeout(r, 1200));
-    const targetCount = notifTarget === 'all' ? users.length :
-      items.filter(i => i.type === notifTarget).map(i => i.user_id).filter((v, i, a) => a.indexOf(v) === i).length;
-    showToast(`Notification sent to ${targetCount} users ✓`);
-    setNotifSubject(''); setNotifBody('');
-    setNotifSending(false);
+    try {
+      // Determine target emails
+      let targetEmails: string[] = [];
+      if (notifTarget === 'all') {
+        targetEmails = users.filter(u => u.email_confirmed_at).map(u => u.email);
+      } else {
+        const targetUserIds = new Set(
+          items.filter(i => i.type === notifTarget).map(i => i.user_id)
+        );
+        targetEmails = users
+          .filter(u => targetUserIds.has(u.id) && u.email_confirmed_at)
+          .map(u => u.email);
+      }
+
+      if (targetEmails.length === 0) {
+        showToast('No target users found', 'error');
+        setNotifSending(false);
+        return;
+      }
+
+      // Send in batches of 5 (EmailJS free tier: 200 emails/month)
+      // Template vars: {{to_email}}, {{subject}}, {{message}}, {{app_url}}
+      const BATCH = 5;
+      let sent = 0;
+      for (let i = 0; i < targetEmails.length; i += BATCH) {
+        const batch = targetEmails.slice(i, i + BATCH);
+        await Promise.allSettled(
+          batch.map(email =>
+            emailjs.send(
+              SERVICE_ID,
+              TEMPLATE_ID,
+              { to_email: email, subject: notifSubject, message: notifBody, app_url: APP_URL },
+              PUBLIC_KEY
+            )
+          )
+        );
+        sent += batch.length;
+        if (i + BATCH < targetEmails.length) await new Promise(r => setTimeout(r, 300));
+      }
+
+      showToast(`Email sent to ${sent} user${sent !== 1 ? 's' : ''} ✓`);
+      setNotifSubject('');
+      setNotifBody('');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to send notifications', 'error');
+    } finally {
+      setNotifSending(false);
+    }
   };
 
   const exportCSV = (type: 'items'|'users') => {
