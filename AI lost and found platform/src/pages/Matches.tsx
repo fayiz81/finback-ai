@@ -24,22 +24,24 @@ function ConfidenceRing({ score, size = 72 }: { score: number; size?: number }) 
   const color = isHigh ? '#34d399' : isMed ? '#fbbf24' : '#f87171';
 
   return (
-    <svg width={size} height={size} className="flex-shrink-0 -rotate-90">
-      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="currentColor" strokeWidth={6} className="text-white/5" />
-      <motion.circle
-        cx={size/2} cy={size/2} r={r} fill="none"
-        stroke={color} strokeWidth={6} strokeLinecap="round"
-        strokeDasharray={circ} strokeDashoffset={circ - dash}
-        initial={{ strokeDashoffset: circ }}
-        animate={{ strokeDashoffset: circ - dash }}
-        transition={{ duration: 1.2, ease: 'easeOut', delay: 0.3 }}
-      />
-      <text x={size/2} y={size/2} textAnchor="middle" dominantBaseline="central"
-        fill={color} fontSize={size * 0.22} fontWeight="700" fontFamily="monospace"
-        className="rotate-90" style={{ transform: `rotate(90deg)`, transformOrigin: `${size/2}px ${size/2}px` }}>
-        {Math.round(score * 100)}%
-      </text>
-    </svg>
+    <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="currentColor" strokeWidth={6} className="text-white/5" />
+        <motion.circle
+          cx={size/2} cy={size/2} r={r} fill="none"
+          stroke={color} strokeWidth={6} strokeLinecap="round"
+          strokeDasharray={circ} strokeDashoffset={circ - dash}
+          initial={{ strokeDashoffset: circ }}
+          animate={{ strokeDashoffset: circ - dash }}
+          transition={{ duration: 1.2, ease: 'easeOut', delay: 0.3 }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span style={{ color, fontSize: size * 0.22, fontWeight: 700, fontFamily: 'monospace', lineHeight: 1 }}>
+          {Math.round(score * 100)}%
+        </span>
+      </div>
+    </div>
   );
 }
 
