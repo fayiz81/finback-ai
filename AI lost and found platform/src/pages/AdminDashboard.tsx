@@ -232,66 +232,55 @@ export default function AdminDashboard() {
 
   const sendNotification = async () => {
     if (!notifSubject || !notifBody) { showToast('Fill in subject and message', 'error'); return; }
+    setNotifSending(true);
 
-    const SERVICE_ID  = import.meta.env.VITE_EMAILJS_SERVICE_ID as string;
-    const PUBLIC_KEY  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY as string;
-    const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_BROADCAST_TEMPLATE_ID as string;
-    const APP_URL     = import.meta.env.VITE_APP_URL || 'https://finback-ai.vercel.app';
+    const EMAILJS_SERVICE_ID = 'service_0gpttgh';
+    const EMAILJS_TEMPLATE_ID = 'template_ffsyxug';
+    const EMAILJS_PUBLIC_KEY = '8WuJMcm-wl0Ho8cYA';
 
-    if (!SERVICE_ID || !PUBLIC_KEY || !TEMPLATE_ID) {
-      showToast('EmailJS env vars not set', 'error');
+    // Get target users
+    let targetUsers = users.filter(u => u.email_confirmed_at);
+    if (notifTarget === 'lost') {
+      const lostUserIds = new Set(items.filter(i => i.type === 'lost').map(i => i.user_id));
+      targetUsers = targetUsers.filter(u => lostUserIds.has(u.id));
+    } else if (notifTarget === 'found') {
+      const foundUserIds = new Set(items.filter(i => i.type === 'found').map(i => i.user_id));
+      targetUsers = targetUsers.filter(u => foundUserIds.has(u.id));
+    }
+
+    if (targetUsers.length === 0) {
+      showToast('No users to notify', 'error');
+      setNotifSending(false);
       return;
     }
 
-    setNotifSending(true);
-    try {
-      // Determine target emails
-      let targetEmails: string[] = [];
-      if (notifTarget === 'all') {
-        targetEmails = users.filter(u => u.email_confirmed_at).map(u => u.email);
-      } else {
-        const targetUserIds = new Set(
-          items.filter(i => i.type === notifTarget).map(i => i.user_id)
+    let sent = 0;
+    for (const user of targetUsers) {
+      try {
+        await emailjs.send(
+          EMAILJS_SERVICE_ID,
+          EMAILJS_TEMPLATE_ID,
+          {
+            to_email: user.email,
+            user_name: user.user_metadata?.full_name || user.email.split('@')[0],
+            lost_title: notifSubject,
+            found_title: notifBody,
+            confidence: '—',
+            found_location: '—',
+            found_date: new Date().toLocaleDateString(),
+            match_url: 'https://finback-ai.vercel.app/matches',
+          },
+          EMAILJS_PUBLIC_KEY
         );
-        targetEmails = users
-          .filter(u => targetUserIds.has(u.id) && u.email_confirmed_at)
-          .map(u => u.email);
+        sent++;
+      } catch (err) {
+        console.error('EmailJS error for', user.email, err);
       }
-
-      if (targetEmails.length === 0) {
-        showToast('No target users found', 'error');
-        setNotifSending(false);
-        return;
-      }
-
-      // Send in batches of 5 (EmailJS free tier: 200 emails/month)
-      // Template vars: {{to_email}}, {{subject}}, {{message}}, {{app_url}}
-      const BATCH = 5;
-      let sent = 0;
-      for (let i = 0; i < targetEmails.length; i += BATCH) {
-        const batch = targetEmails.slice(i, i + BATCH);
-        await Promise.allSettled(
-          batch.map(email =>
-            emailjs.send(
-              SERVICE_ID,
-              TEMPLATE_ID,
-              { to_email: email, subject: notifSubject, message: notifBody, app_url: APP_URL },
-              PUBLIC_KEY
-            )
-          )
-        );
-        sent += batch.length;
-        if (i + BATCH < targetEmails.length) await new Promise(r => setTimeout(r, 300));
-      }
-
-      showToast(`Email sent to ${sent} user${sent !== 1 ? 's' : ''} ✓`);
-      setNotifSubject('');
-      setNotifBody('');
-    } catch (err: any) {
-      showToast(err?.message || 'Failed to send notifications', 'error');
-    } finally {
-      setNotifSending(false);
     }
+
+    showToast(`Notification sent to ${sent} users ✓`);
+    setNotifSubject(''); setNotifBody('');
+    setNotifSending(false);
   };
 
   const exportCSV = (type: 'items'|'users') => {
