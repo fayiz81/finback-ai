@@ -13,6 +13,7 @@ import Submit from "@/pages/Submit";
 import Matches from "@/pages/Matches";
 import AdminDashboard from "@/pages/AdminDashboard";
 import Auth from "@/pages/Auth";
+import EmailConfirmed from "@/pages/EmailConfirmed";
 import { useEffect, useState } from "react";
 
 const queryClient = new QueryClient({
@@ -72,6 +73,9 @@ function AppContent() {
     <Routes>
       <Route path={ROUTE_PATHS.HOME} element={<Home />} />
       <Route path={ROUTE_PATHS.AUTH} element={<Auth />} />
+
+      {/* Email confirmation landing page */}
+      <Route path="/email-confirmed" element={<EmailConfirmed />} />
 
       <Route
         path={ROUTE_PATHS.DASHBOARD}
