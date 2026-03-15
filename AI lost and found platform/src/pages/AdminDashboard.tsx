@@ -128,6 +128,11 @@ export default function AdminDashboard() {
   const [notifBody, setNotifBody] = useState('');
   const [notifTarget, setNotifTarget] = useState<'all'|'lost'|'found'>('all');
   const [notifSending, setNotifSending] = useState(false);
+  const [emailLog, setEmailLog] = useState<{id:string;to:string;subject:string;type:string;itemTitle:string;sentAt:string;status:'sent'|'failed'}[]>([]);
+  const [notifMode, setNotifMode] = useState<'broadcast'|'individual'>('broadcast');
+  const [selectedNotifItem, setSelectedNotifItem] = useState<Item|null>(null);
+  const [itemSearch2, setItemSearch2] = useState('');
+  const [individualSending, setIndividualSending] = useState(false);
 
   const showToast = (msg: string, type: 'success'|'error' = 'success') => {
     setToast({ msg, type });
@@ -278,9 +283,70 @@ export default function AdminDashboard() {
       }
     }
 
+    // Log sent emails
+    const newLogs = targetUsers.slice(0, sent).map(u => ({
+      id: Date.now() + Math.random() + u.id,
+      to: u.email,
+      subject: notifSubject,
+      type: notifTarget,
+      itemTitle: '—',
+      sentAt: new Date().toISOString(),
+      status: 'sent' as const,
+    }));
+    setEmailLog(prev => [...newLogs, ...prev]);
     showToast(`Notification sent to ${sent} users ✓`);
     setNotifSubject(''); setNotifBody('');
     setNotifSending(false);
+  };
+
+  const sendIndividual = async () => {
+    if (!selectedNotifItem || !notifSubject || !notifBody) { showToast('Select an item and fill subject + message', 'error'); return; }
+    setIndividualSending(true);
+
+    const EMAILJS_SERVICE_ID = 'service_0gpttgh';
+    const EMAILJS_TEMPLATE_ID = 'template_ffsyxug';
+    const EMAILJS_PUBLIC_KEY = '8WuJMcm-wl0Ho8cYA';
+
+    // Find the user who owns this item
+    const owner = users.find(u => u.id === selectedNotifItem.user_id);
+    if (!owner?.email) { showToast('Could not find user email', 'error'); setIndividualSending(false); return; }
+
+    try {
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        to_email: owner.email,
+        user_name: owner.user_metadata?.full_name || owner.email.split('@')[0],
+        lost_title: selectedNotifItem.title,
+        found_title: notifBody,
+        confidence: '—',
+        found_location: selectedNotifItem.location_name || '—',
+        found_date: new Date(selectedNotifItem.date_lost || selectedNotifItem.date_found || selectedNotifItem.created_at).toLocaleDateString(),
+        match_url: 'https://finback-ai.vercel.app/matches',
+      }, EMAILJS_PUBLIC_KEY);
+
+      setEmailLog(prev => [{
+        id: Date.now() + Math.random() + '',
+        to: owner.email,
+        subject: notifSubject,
+        type: selectedNotifItem.type,
+        itemTitle: selectedNotifItem.title,
+        sentAt: new Date().toISOString(),
+        status: 'sent',
+      }, ...prev]);
+      showToast(`Email sent to ${owner.email} ✓`);
+      setNotifSubject(''); setNotifBody(''); setSelectedNotifItem(null);
+    } catch (err) {
+      setEmailLog(prev => [{
+        id: Date.now() + Math.random() + '',
+        to: owner.email,
+        subject: notifSubject,
+        type: selectedNotifItem.type,
+        itemTitle: selectedNotifItem.title,
+        sentAt: new Date().toISOString(),
+        status: 'failed',
+      }, ...prev]);
+      showToast('Failed to send email', 'error');
+    }
+    setIndividualSending(false);
   };
 
   const exportCSV = (type: 'items'|'users') => {
@@ -441,7 +507,7 @@ export default function AdminDashboard() {
                     </div>
                     <div className="divide-y divide-white/5">
                       {items.slice(0, 5).map(item => (
-                        <div key={item.id} className="px-5 py-3 flex items-center gap-3 hover:bg-white/[0.02] cursor-pointer" onClick={() => setSelectedItem(item)}>
+                        <div key={item.id} className="px-5 py-3 flex items-center gap-3 hover:bg-white/[0.02] cursor-pointer" onClick={() => setSelectedNotifItem(item)}>
                           <div className="w-9 h-9 rounded-lg bg-white/5 overflow-hidden flex-shrink-0">
                             {item.image_url ? <img src={item.image_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Image size={12} className="text-white/20" /></div>}
                           </div>
@@ -795,59 +861,138 @@ export default function AdminDashboard() {
 
             {/* ── NOTIFICATIONS ── */}
             {activeTab === 'notifications' && (
-              <motion.div key="notifications" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6 max-w-2xl">
+              <motion.div key="notifications" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6 max-w-3xl">
                 <div>
-                  <h2 className="font-semibold mb-1">Send Notification</h2>
-                  <p className="text-xs text-white/30">Send in-app notifications to your users</p>
-                </div>
-                <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-6 space-y-5">
-                  {/* Target */}
-                  <div>
-                    <label className="text-xs text-white/40 uppercase tracking-widest mb-2 block">Target Audience</label>
-                    <div className="flex gap-2">
-                      {[{v:'all',label:'All Users'},{v:'lost',label:'Users with Lost Items'},{v:'found',label:'Users with Found Items'}].map(t => (
-                        <button key={t.v} onClick={() => setNotifTarget(t.v as any)}
-                          className={`px-3 py-2 rounded-xl text-xs transition-all ${notifTarget === t.v ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30' : 'bg-white/5 text-white/40 border border-white/10 hover:text-white/70'}`}>
-                          {t.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  {/* Subject */}
-                  <div>
-                    <label className="text-xs text-white/40 uppercase tracking-widest mb-2 block">Subject</label>
-                    <input value={notifSubject} onChange={e => setNotifSubject(e.target.value)} placeholder="e.g. Your item may have been found!"
-                      className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-white/25 focus:outline-none focus:border-violet-500/50" />
-                  </div>
-                  {/* Message */}
-                  <div>
-                    <label className="text-xs text-white/40 uppercase tracking-widest mb-2 block">Message</label>
-                    <textarea value={notifBody} onChange={e => setNotifBody(e.target.value)} rows={4} placeholder="Write your message here..."
-                      className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-white/25 focus:outline-none focus:border-violet-500/50 resize-none" />
-                  </div>
-                  {/* Preview */}
-                  {(notifSubject || notifBody) && (
-                    <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-4">
-                      <p className="text-[10px] text-violet-400 uppercase tracking-widest mb-2">Preview</p>
-                      <p className="text-sm font-semibold mb-1">{notifSubject || 'No subject'}</p>
-                      <p className="text-xs text-white/50 leading-relaxed">{notifBody || 'No message'}</p>
-                    </div>
-                  )}
-                  <button onClick={sendNotification} disabled={notifSending || !notifSubject || !notifBody}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm bg-violet-500/20 text-violet-300 border border-violet-500/30 hover:bg-violet-500/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
-                    {notifSending ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}
-                    {notifSending ? 'Sending...' : `Send to ${notifTarget === 'all' ? `All ${users.length} Users` : notifTarget === 'lost' ? `${lostItems.length} Lost Reporters` : `${foundItems.length} Finders`}`}
-                  </button>
+                  <h2 className="font-semibold mb-1">Email Notifications</h2>
+                  <p className="text-xs text-white/30">Send emails directly to users via EmailJS</p>
                 </div>
 
-                {/* Recent notifications log */}
+                {/* Mode toggle */}
+                <div className="flex gap-2">
+                  {[{v:'broadcast',label:'📣 Broadcast'},{v:'individual',label:'🎯 Individual'}].map(m => (
+                    <button key={m.v} onClick={() => setNotifMode(m.v as any)}
+                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${notifMode === m.v ? 'bg-violet-500/20 text-violet-300 border border-violet-500/40' : 'bg-white/5 text-white/40 border border-white/10 hover:text-white/70'}`}>
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* ── BROADCAST MODE ── */}
+                {notifMode === 'broadcast' && (
+                  <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-6 space-y-5">
+                    <div>
+                      <label className="text-xs text-white/40 uppercase tracking-widest mb-2 block">Target Audience</label>
+                      <div className="flex flex-wrap gap-2">
+                        {[{v:'all',label:`All Users (${users.length})`},{v:'lost',label:`Lost Reporters (${lostItems.length})`},{v:'found',label:`Finders (${foundItems.length})`}].map(t => (
+                          <button key={t.v} onClick={() => setNotifTarget(t.v as any)}
+                            className={`px-3 py-2 rounded-xl text-xs transition-all ${notifTarget === t.v ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30' : 'bg-white/5 text-white/40 border border-white/10 hover:text-white/70'}`}>
+                            {t.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-white/40 uppercase tracking-widest mb-2 block">Subject</label>
+                      <input value={notifSubject} onChange={e => setNotifSubject(e.target.value)} placeholder="e.g. Your item may have been found!"
+                        className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-white/25 focus:outline-none focus:border-violet-500/50" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-white/40 uppercase tracking-widest mb-2 block">Message</label>
+                      <textarea value={notifBody} onChange={e => setNotifBody(e.target.value)} rows={4} placeholder="Write your message here..."
+                        className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-white/25 focus:outline-none focus:border-violet-500/50 resize-none" />
+                    </div>
+                    {(notifSubject || notifBody) && (
+                      <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-4">
+                        <p className="text-[10px] text-violet-400 uppercase tracking-widest mb-2">Preview</p>
+                        <p className="text-sm font-semibold mb-1">{notifSubject || 'No subject'}</p>
+                        <p className="text-xs text-white/50 leading-relaxed">{notifBody || 'No message'}</p>
+                      </div>
+                    )}
+                    <button onClick={sendNotification} disabled={notifSending || !notifSubject || !notifBody}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm bg-violet-500/20 text-violet-300 border border-violet-500/30 hover:bg-violet-500/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                      {notifSending ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}
+                      {notifSending ? 'Sending...' : `Send to ${notifTarget === 'all' ? `All ${users.length} Users` : notifTarget === 'lost' ? `${lostItems.length} Lost Reporters` : `${foundItems.length} Finders`}`}
+                    </button>
+                  </div>
+                )}
+
+                {/* ── INDIVIDUAL MODE ── */}
+                {notifMode === 'individual' && (
+                  <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-6 space-y-5">
+                    <div>
+                      <label className="text-xs text-white/40 uppercase tracking-widest mb-3 block">Select Item to Notify About</label>
+                      <input value={itemSearch2} onChange={e => setItemSearch2(e.target.value)} placeholder="Search by item title..."
+                        className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-white/25 focus:outline-none focus:border-violet-500/50 mb-3" />
+                      <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                        {items.filter(i => i.title.toLowerCase().includes(itemSearch2.toLowerCase())).slice(0, 20).map(item => (
+                          <button key={item.id} onClick={() => setSelectedItem(item)}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all border ${selectedNotifItem?.id === item.id ? 'bg-violet-500/15 border-violet-500/40 text-white' : 'bg-white/[0.02] border-white/8 text-white/60 hover:text-white hover:bg-white/5'}`}>
+                            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${item.type === 'lost' ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'}`}>{item.type}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{item.title}</p>
+                              <p className="text-[11px] text-white/30 truncate">{item.location_name || 'No location'} · {new Date(item.created_at).toLocaleDateString()}</p>
+                            </div>
+                            {selectedNotifItem?.id === item.id && <CheckCircle size={14} className="text-violet-400 shrink-0" />}
+                          </button>
+                        ))}
+                        {items.filter(i => i.title.toLowerCase().includes(itemSearch2.toLowerCase())).length === 0 && (
+                          <p className="text-center text-white/25 text-sm py-4">No items found</p>
+                        )}
+                      </div>
+                    </div>
+                    {selectedNotifItem && (
+                      <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-3 flex items-center gap-3">
+                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md shrink-0 ${selectedNotifItem.type === 'lost' ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'}`}>{selectedNotifItem.type}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold truncate">{selectedNotifItem.title}</p>
+                          <p className="text-[11px] text-white/40">{users.find(u => u.id === selectedNotifItem.user_id)?.email || 'Unknown user'}</p>
+                        </div>
+                        <button onClick={() => setSelectedNotifItem(null)} className="text-white/30 hover:text-white"><X size={14} /></button>
+                      </div>
+                    )}
+                    <div>
+                      <label className="text-xs text-white/40 uppercase tracking-widest mb-2 block">Subject</label>
+                      <input value={notifSubject} onChange={e => setNotifSubject(e.target.value)} placeholder="e.g. We found a match for your item!"
+                        className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-white/25 focus:outline-none focus:border-violet-500/50" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-white/40 uppercase tracking-widest mb-2 block">Message</label>
+                      <textarea value={notifBody} onChange={e => setNotifBody(e.target.value)} rows={4} placeholder="Write a personal message to this user..."
+                        className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-white/25 focus:outline-none focus:border-violet-500/50 resize-none" />
+                    </div>
+                    <button onClick={sendIndividual} disabled={individualSending || !selectedNotifItem || !notifSubject || !notifBody}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                      {individualSending ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}
+                      {individualSending ? 'Sending...' : `Send to ${users.find(u => u.id === selectedNotifItem?.user_id)?.email || 'selected user'}`}
+                    </button>
+                  </div>
+                )}
+
+                {/* ── EMAIL HISTORY ── */}
                 <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
-                  <div className="px-5 py-4 border-b border-white/5">
-                    <span className="font-semibold text-sm">Notification Log</span>
+                  <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">
+                    <span className="font-semibold text-sm">📬 Sent Email History</span>
+                    <span className="text-xs text-white/30">{emailLog.length} sent this session</span>
                   </div>
-                  <div className="px-5 py-8 text-center text-white/25 text-sm">
-                    No notifications sent yet
-                  </div>
+                  {emailLog.length === 0 ? (
+                    <div className="px-5 py-10 text-center text-white/25 text-sm">No emails sent yet this session</div>
+                  ) : (
+                    <div className="divide-y divide-white/5">
+                      {emailLog.map(log => (
+                        <div key={log.id} className="px-5 py-3 flex items-center gap-4">
+                          <div className={`w-2 h-2 rounded-full shrink-0 ${log.status === 'sent' ? 'bg-emerald-400' : 'bg-red-400'}`} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-white/80 truncate">{log.subject}</p>
+                            <p className="text-[11px] text-white/30 truncate">To: {log.to} {log.itemTitle !== '—' ? `· Re: ${log.itemTitle}` : ''}</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${log.type === 'lost' ? 'bg-red-500/20 text-red-400' : log.type === 'found' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-white/40'}`}>{log.type}</span>
+                            <p className="text-[10px] text-white/20 mt-1">{new Date(log.sentAt).toLocaleTimeString()}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
