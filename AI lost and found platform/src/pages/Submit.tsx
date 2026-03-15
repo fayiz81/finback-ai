@@ -5,8 +5,9 @@ import { CheckCircle2 } from 'lucide-react';
 import { ItemForm } from '@/components/Forms';
 import { useItems } from '@/hooks/useItems';
 import { useAuth } from '@/hooks/useAuth';
-import { useMatchNotification } from '@/hooks/useMatchNotification';
-import { ROUTE_PATHS } from '@/lib/index';
+import { ROUTE_PATHS, buildEnhancedMatches } from '@/lib/index';
+import { sendMatchEmail } from '@/hooks/useMatchNotification';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 export default function Submit() {
@@ -15,7 +16,6 @@ export default function Submit() {
   const { createItem } = useItems();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { sendMatchNotificationIfFound } = useMatchNotification();
 
   const handleSubmit = async (formData: any) => {
     if (!user) {
@@ -51,10 +51,38 @@ export default function Submit() {
         setSubmitted(true);
         toast.success('Item submitted! AI is now scanning for matches.');
 
-        // Fire-and-forget: score new item against existing items and email if matched
-        const ownerName =
-          user.user_metadata?.full_name || user.email?.split('@')[0] || 'there';
-        sendMatchNotificationIfFound(data, user.email ?? '', ownerName);
+        // Auto match notification via EmailJS
+        try {
+          const oppositeType = itemType === 'lost' ? 'found' : 'lost';
+          const { data: candidates } = await supabase
+            .from('items')
+            .select('*')
+            .eq('type', oppositeType)
+            .limit(100);
+
+          if (candidates && candidates.length > 0) {
+            const newItem = data;
+            const lostItems = itemType === 'lost' ? [newItem] : candidates;
+            const foundItems = itemType === 'found' ? [newItem] : candidates;
+            const matches = buildEnhancedMatches(lostItems, foundItems, 0.4);
+
+            if (matches.length > 0) {
+              const best = matches[0];
+              await sendMatchEmail({
+                toEmail: user!.email!,
+                userName: user!.user_metadata?.full_name || user!.email!.split('@')[0],
+                lostTitle: best.lostItem.title,
+                foundTitle: best.foundItem.title,
+                confidence: best.confidenceScore,
+                foundLocation: best.foundItem.location_name || '',
+                foundDate: new Date(best.foundItem.date_found || best.foundItem.created_at).toLocaleDateString(),
+              });
+            }
+          }
+        } catch (emailErr) {
+          console.error('Email notification failed:', emailErr);
+          // Don't block the user flow if email fails
+        }
 
         setTimeout(() => {
           navigate(ROUTE_PATHS.BROWSE);
