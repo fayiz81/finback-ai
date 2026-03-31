@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { ROUTE_PATHS, buildEnhancedMatches } from '@/lib/index';
 import { sendMatchEmail } from '@/hooks/useMatchNotification';
 import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { toast } from 'sonner';
 
 export default function Submit() {
@@ -28,7 +29,7 @@ export default function Submit() {
       description: formData.description,
       category: formData.category,
       type: itemType,
-      status: itemType, // ✅ Fixed: must be 'lost' or 'found' per CHECK constraint
+      status: itemType,
       user_id: user.id,
       location_name: formData.location?.name || '',
       location_lat: formData.location?.lat || 0,
@@ -49,7 +50,6 @@ export default function Submit() {
         .limit(5);
 
       if (existing && existing.length > 0) {
-        // Already submitted this exact item — delete the old one and replace with new
         for (const dup of existing) {
           await supabase.from('items').delete().eq('id', dup.id);
         }
@@ -90,7 +90,7 @@ export default function Submit() {
                 userName: user!.user_metadata?.full_name || user!.email!.split('@')[0],
                 lostTitle: best.lostItem.title,
                 foundTitle: best.foundItem.title,
-                confidence: best.score,
+                confidence: best.confidenceScore,
                 foundLocation: best.foundItem.location_name || '',
                 foundDate: new Date(best.foundItem.date_found || best.foundItem.created_at).toLocaleDateString(),
               });
@@ -98,7 +98,6 @@ export default function Submit() {
           }
         } catch (emailErr) {
           console.error('Email notification failed:', emailErr);
-          // Don't block the user flow if email fails
         }
 
         // Auto-resolve: if found item matches a lost item at ≥ 85%, mark both as resolved and delete
@@ -120,13 +119,9 @@ export default function Submit() {
               const best2 = matches2[0];
               const matchedItem = itemType === 'found' ? best2.lostItem : best2.foundItem;
 
-              // Delete the matched opposite item (it's been resolved)
               await supabase.from('items').delete().eq('id', matchedItem.id);
-
-              // Also delete the newly submitted item since it's a duplicate resolution
               await supabase.from('items').delete().eq('id', newItem2.id);
 
-              // Notify the owner of the matched item that their item was found
               const { data: { users: allUsers } } = await supabaseAdmin.auth.admin.listUsers();
               const matchedOwner = allUsers?.find((u: any) => u.id === matchedItem.user_id);
               if (matchedOwner?.email) {
@@ -135,7 +130,7 @@ export default function Submit() {
                   userName: matchedOwner.user_metadata?.full_name || matchedOwner.email.split('@')[0],
                   lostTitle: best2.lostItem.title,
                   foundTitle: best2.foundItem.title,
-                  confidence: best2.score,
+                  confidence: best2.confidenceScore,
                   foundLocation: best2.foundItem.location_name || '',
                   foundDate: new Date(best2.foundItem.date_found || best2.foundItem.created_at).toLocaleDateString(),
                 });
