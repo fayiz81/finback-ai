@@ -1,18 +1,27 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, SlidersHorizontal, Grid3x3, List, Sparkles } from 'lucide-react';
+import { Search, Filter, Grid3x3, List, MapPin, Calendar, Package } from 'lucide-react';
 import { ITEM_CATEGORIES } from '@/lib/index';
 import { useItems } from '@/hooks/useItems';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { MapPin, Calendar, Package } from 'lucide-react';
 
 type ViewMode = 'grid' | 'list';
 type SortOption = 'recent' | 'oldest' | 'category';
+
+const glass = {
+  background: 'rgba(255,255,255,0.06)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: 20,
+} as React.CSSProperties;
+
+const glassStrong = {
+  background: 'rgba(255,255,255,0.09)',
+  backdropFilter: 'blur(30px)',
+  WebkitBackdropFilter: 'blur(30px)',
+  border: '1px solid rgba(255,255,255,0.15)',
+  borderRadius: 16,
+} as React.CSSProperties;
 
 export default function Browse() {
   const { items, loading, lostItems, foundItems } = useItems();
@@ -24,176 +33,175 @@ export default function Browse() {
 
   const currentItems = useMemo(() => {
     const base = activeTab === 'lost' ? lostItems : foundItems;
-
     let filtered = base.filter(item => {
-      const matchSearch =
-        !searchQuery ||
+      const matchSearch = !searchQuery ||
         item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.location_name?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchCategory = category === 'all' || item.category === category;
       return matchSearch && matchCategory;
     });
-
     filtered = [...filtered].sort((a, b) => {
       if (sortBy === 'recent') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       if (sortBy === 'oldest') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-      if (sortBy === 'category') return (a.category || '').localeCompare(b.category || '');
-      return 0;
+      return (a.category || '').localeCompare(b.category || '');
     });
-
     return filtered;
   }, [activeTab, lostItems, foundItems, searchQuery, category, sortBy]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="w-full px-4 py-8 md:px-6 lg:px-8">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="max-w-7xl mx-auto">
+    <div style={{ minHeight:'100vh', padding:'32px 16px' }}>
+      <div style={{ maxWidth:1200, margin:'0 auto' }}>
 
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-xl bg-primary/10">
-                <Search className="w-6 h-6 text-primary" />
-              </div>
-              <h1 className="text-4xl font-bold tracking-tight">Browse Items</h1>
+        {/* Header */}
+        <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} style={{ marginBottom:32 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:8 }}>
+            <div style={{ width:44, height:44, borderRadius:14, background:'rgba(124,58,237,0.2)', border:'1px solid rgba(124,58,237,0.3)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <Search style={{ width:20, height:20, color:'#a78bfa' }} />
             </div>
-            <p className="text-muted-foreground text-lg">Search through lost and found items</p>
+            <h1 style={{ fontSize:32, fontWeight:700, color:'#fff', margin:0 }}>Browse Items</h1>
+          </div>
+          <p style={{ color:'rgba(255,255,255,0.4)', fontSize:15, margin:0 }}>Search through lost and found items</p>
+        </motion.div>
+
+        {/* Search & Filters */}
+        <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.1 }} style={{ marginBottom:24 }}>
+          <div style={{ display:'flex', gap:12, marginBottom:14, flexWrap:'wrap' }}>
+            {/* Search bar */}
+            <div style={{ flex:1, minWidth:240, position:'relative' }}>
+              <Search style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', width:16, height:16, color:'rgba(255,255,255,0.3)' }} />
+              <input
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search by title, description, or location..."
+                style={{ ...glassStrong, width:'100%', padding:'12px 14px 12px 42px', fontSize:14, color:'rgba(255,255,255,0.8)', outline:'none', boxSizing:'border-box' }}
+              />
+            </div>
+            {/* Category */}
+            <select value={category} onChange={e => setCategory(e.target.value)}
+              style={{ ...glassStrong, padding:'12px 16px', fontSize:13, color:'rgba(255,255,255,0.7)', outline:'none', minWidth:160 }}>
+              <option value="all" style={{ background:'#1a0533' }}>All Categories</option>
+              {ITEM_CATEGORIES.map(cat => <option key={cat} value={cat} style={{ background:'#1a0533' }}>{cat}</option>)}
+            </select>
           </div>
 
-          {/* Search & Filters */}
-          <div className="mb-6 space-y-4">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  placeholder="Search by title, description, or location..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 h-12 text-base"
-                />
-              </div>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="w-[180px] h-12">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {ITEM_CATEGORIES.map((cat) => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Tabs + sort + view */}
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10 }}>
+            {/* Lost / Found tabs */}
+            <div style={{ display:'flex', gap:6, background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:14, padding:4 }}>
+              {(['lost','found'] as const).map(tab => (
+                <button key={tab} onClick={() => setActiveTab(tab)}
+                  style={{
+                    padding:'8px 16px', borderRadius:10, fontSize:13, fontWeight:500, cursor:'pointer', transition:'all 0.2s',
+                    background: activeTab === tab ? (tab==='lost' ? 'rgba(239,68,68,0.2)' : 'rgba(52,211,153,0.2)') : 'transparent',
+                    color: activeTab === tab ? (tab==='lost' ? '#f87171' : '#34d399') : 'rgba(255,255,255,0.4)',
+                    border: activeTab === tab ? `1px solid ${tab==='lost' ? 'rgba(239,68,68,0.3)' : 'rgba(52,211,153,0.3)'}` : '1px solid transparent',
+                  }}>
+                  {tab === 'lost' ? 'Lost' : 'Found'} Items
+                  <span style={{ marginLeft:8, padding:'1px 7px', borderRadius:20, fontSize:11, background:'rgba(255,255,255,0.1)', color:'rgba(255,255,255,0.5)' }}>
+                    {tab === 'lost' ? lostItems.length : foundItems.length}
+                  </span>
+                </button>
+              ))}
             </div>
 
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'lost' | 'found')}>
-                <TabsList>
-                  <TabsTrigger value="lost" className="gap-2">
-                    Lost Items <Badge variant="secondary">{lostItems.length}</Badge>
-                  </TabsTrigger>
-                  <TabsTrigger value="found" className="gap-2">
-                    Found Items <Badge variant="secondary">{foundItems.length}</Badge>
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+            <div style={{ display:'flex', gap:8 }}>
+              {/* Sort */}
+              <select value={sortBy} onChange={e => setSortBy(e.target.value as SortOption)}
+                style={{ ...glassStrong, padding:'8px 14px', fontSize:12, color:'rgba(255,255,255,0.6)', outline:'none', borderRadius:10 }}>
+                <option value="recent" style={{ background:'#1a0533' }}>Most Recent</option>
+                <option value="oldest" style={{ background:'#1a0533' }}>Oldest First</option>
+                <option value="category" style={{ background:'#1a0533' }}>By Category</option>
+              </select>
+              {/* View toggle */}
+              <div style={{ display:'flex', gap:4, background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:10, padding:3 }}>
+                {([['grid', Grid3x3], ['list', List]] as const).map(([mode, Icon]) => (
+                  <button key={mode} onClick={() => setViewMode(mode as ViewMode)}
+                    style={{ padding:'6px 10px', borderRadius:8, cursor:'pointer', transition:'all 0.2s', background: viewMode === mode ? 'rgba(124,58,237,0.25)' : 'transparent', color: viewMode === mode ? '#a78bfa' : 'rgba(255,255,255,0.4)', border:'none' }}>
+                    <Icon style={{ width:15, height:15 }} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </motion.div>
 
-              <div className="flex items-center gap-2">
-                <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="recent">Most Recent</SelectItem>
-                    <SelectItem value="oldest">Oldest First</SelectItem>
-                    <SelectItem value="category">By Category</SelectItem>
-                  </SelectContent>
-                </Select>
-                <div className="flex gap-1 border rounded-lg p-1">
-                  <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="sm" onClick={() => setViewMode('grid')}>
-                    <Grid3x3 className="w-4 h-4" />
-                  </Button>
-                  <Button variant={viewMode === 'list' ? 'secondary' : 'ghost'} size="sm" onClick={() => setViewMode('list')}>
-                    <List className="w-4 h-4" />
-                  </Button>
+        {/* Items grid */}
+        {loading ? (
+          <div style={{ display:'flex', justifyContent:'center', padding:'80px 0' }}>
+            <div style={{ width:40, height:40, border:'3px solid rgba(124,58,237,0.3)', borderTopColor:'#7c3aed', borderRadius:'50', animation:'spin 0.8s linear infinite' }} />
+          </div>
+        ) : (
+          <AnimatePresence mode="wait">
+            {currentItems.length === 0 ? (
+              <motion.div key="empty" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+                style={{ textAlign:'center', padding:'80px 0' }}>
+                <div style={{ width:64, height:64, borderRadius:'50%', background:'rgba(255,255,255,0.05)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px' }}>
+                  <Filter style={{ width:28, height:28, color:'rgba(255,255,255,0.2)' }} />
                 </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Items */}
-          {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : (
-            <AnimatePresence mode="wait">
-              {currentItems.length === 0 ? (
-                <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-16">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
-                    <Filter className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2">No items found</h3>
-                  <p className="text-muted-foreground">Try adjusting your filters or search query</p>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="items"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}
-                >
-                  {currentItems.map((item, index) => (
-                    <motion.div key={item.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04 }}>
-                      <Card className="overflow-hidden border-border/50 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.01]">
-                        <div className="relative h-48 overflow-hidden bg-muted">
-                          {item.image_url ? (
-                            <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <Package className="w-12 h-12 text-muted-foreground/30" />
-                            </div>
-                          )}
-                          <div className="absolute top-3 right-3">
-                            <Badge className={item.type === 'lost' ? 'bg-destructive/80 text-white' : 'bg-emerald-500/80 text-white'}>
-                              {item.type}
-                            </Badge>
+                <h3 style={{ fontSize:18, fontWeight:600, color:'rgba(255,255,255,0.7)', marginBottom:8 }}>No items found</h3>
+                <p style={{ color:'rgba(255,255,255,0.35)', fontSize:14 }}>Try adjusting your filters or search query</p>
+              </motion.div>
+            ) : (
+              <motion.div key="items" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+                style={{ display:'grid', gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(280px, 1fr))' : '1fr', gap:16 }}>
+                {currentItems.map((item, index) => (
+                  <motion.div key={item.id} initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay: index * 0.04 }}>
+                    <div style={{ ...glass, overflow:'hidden', transition:'all 0.3s', cursor:'pointer' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.border = '1px solid rgba(255,255,255,0.2)'; (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.border = '1px solid rgba(255,255,255,0.1)'; (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)'; }}>
+                      {/* Image */}
+                      <div style={{ position:'relative', height: viewMode === 'grid' ? 200 : 120, background:'rgba(255,255,255,0.04)', overflow:'hidden', ...(viewMode === 'list' ? { width:120, height:120, flexShrink:0 } : {}) }}>
+                        {item.image_url ? (
+                          <img src={item.image_url} alt={item.title} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                        ) : (
+                          <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                            <Package style={{ width:36, height:36, color:'rgba(255,255,255,0.1)' }} />
                           </div>
-                          <div className="absolute top-3 left-3">
-                            <Badge variant="secondary" className="text-xs">{item.status}</Badge>
-                          </div>
-                        </div>
-                        <CardHeader className="pb-2">
-                          <h3 className="font-semibold text-lg line-clamp-1">{item.title}</h3>
-                          <Badge variant="outline" className="w-fit text-xs">{item.category}</Badge>
-                        </CardHeader>
-                        <CardContent className="space-y-2 pb-4">
-                          <p className="text-sm text-muted-foreground line-clamp-2">{item.description}</p>
+                        )}
+                        <span style={{
+                          position:'absolute', top:10, right:10, padding:'3px 10px', borderRadius:20, fontSize:11, fontWeight:600,
+                          background: item.type === 'lost' ? 'rgba(239,68,68,0.2)' : 'rgba(52,211,153,0.2)',
+                          color: item.type === 'lost' ? '#f87171' : '#34d399',
+                          border: `1px solid ${item.type === 'lost' ? 'rgba(239,68,68,0.3)' : 'rgba(52,211,153,0.3)'}`,
+                          backdropFilter:'blur(10px)',
+                        }}>
+                          {item.type}
+                        </span>
+                      </div>
+                      {/* Content */}
+                      <div style={{ padding:16 }}>
+                        <h3 style={{ fontSize:15, fontWeight:600, color:'#fff', marginBottom:6, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.title}</h3>
+                        <span style={{ display:'inline-block', padding:'2px 8px', borderRadius:6, fontSize:11, background:'rgba(255,255,255,0.06)', color:'rgba(255,255,255,0.45)', border:'1px solid rgba(255,255,255,0.08)', marginBottom:10 }}>
+                          {item.category}
+                        </span>
+                        <p style={{ fontSize:13, color:'rgba(255,255,255,0.4)', lineHeight:1.5, marginBottom:10, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{item.description}</p>
+                        <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
                           {item.location_name && (
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <MapPin className="w-3.5 h-3.5 text-primary" />
-                              <span className="line-clamp-1">{item.location_name}</span>
+                            <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'rgba(255,255,255,0.35)' }}>
+                              <MapPin style={{ width:12, height:12, color:'#7c3aed', flexShrink:0 }} />
+                              <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.location_name}</span>
                             </div>
                           )}
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Calendar className="w-3.5 h-3.5 text-primary" />
+                          <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'rgba(255,255,255,0.35)' }}>
+                            <Calendar style={{ width:12, height:12, color:'#7c3aed', flexShrink:0 }} />
                             <span>{new Date(item.created_at).toLocaleDateString()}</span>
                           </div>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          )}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        )}
 
-          {currentItems.length > 0 && (
-            <div className="mt-8 text-center text-sm text-muted-foreground">
-              Showing {currentItems.length} of {activeTab === 'lost' ? lostItems.length : foundItems.length} items
-            </div>
-          )}
-        </motion.div>
+        {currentItems.length > 0 && (
+          <div style={{ marginTop:32, textAlign:'center', fontSize:13, color:'rgba(255,255,255,0.3)' }}>
+            Showing {currentItems.length} of {activeTab === 'lost' ? lostItems.length : foundItems.length} items
+          </div>
+        )}
       </div>
     </div>
   );
