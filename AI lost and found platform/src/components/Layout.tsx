@@ -4,60 +4,52 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, Home, Search, Upload, Zap, Shield, User, LogOut, Moon, Sun } from 'lucide-react';
 import { ROUTE_PATHS } from '@/lib/index';
 import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
-interface LayoutProps {
-  children: React.ReactNode;
-}
+interface LayoutProps { children: React.ReactNode; }
 
 export function Layout({ children }: LayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [scrolled, setScrolled] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(0);
   const headerRef = useRef<HTMLElement>(null);
   const location = useLocation();
   const { user, isAuthenticated, signOut, isAdmin } = useAuth();
 
-  // Get display name from Supabase user metadata
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
   const displayEmail = user?.email || '';
   const avatarInitial = displayName.charAt(0).toUpperCase();
 
   useEffect(() => {
-    const updateHeight = () => {
-      if (headerRef.current) {
-        const height = headerRef.current.offsetHeight;
-        setHeaderHeight(height);
-        document.documentElement.style.setProperty('--header-height', `${height}px`);
-      }
-    };
-    updateHeight();
-    const resizeObserver = new ResizeObserver(updateHeight);
-    if (headerRef.current) resizeObserver.observe(headerRef.current);
-    return () => resizeObserver.disconnect();
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [isDarkMode]);
+    const updateHeight = () => {
+      if (headerRef.current) {
+        const h = headerRef.current.offsetHeight;
+        setHeaderHeight(h);
+        document.documentElement.style.setProperty('--header-height', `${h}px`);
+      }
+    };
+    updateHeight();
+    const ro = new ResizeObserver(updateHeight);
+    if (headerRef.current) ro.observe(headerRef.current);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [location.pathname]);
+    document.documentElement.classList.toggle('dark', isDarkMode);
+  }, [isDarkMode]);
+
+  useEffect(() => { setMobileMenuOpen(false); }, [location.pathname]);
 
   const navigationItems = [
     { to: ROUTE_PATHS.HOME, label: 'Home', icon: Home },
@@ -69,138 +61,131 @@ export function Layout({ children }: LayoutProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <header
-        ref={headerRef}
-        className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60"
-      >
+    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #0f0c29 0%, #1a0533 35%, #0d1f3c 70%, #0a2a1a 100%)' }}>
+      {/* Global ambient blobs */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div style={{ position:'absolute', width:600, height:600, borderRadius:'50%', background:'radial-gradient(circle, rgba(109,40,217,0.2) 0%, transparent 70%)', top:-200, left:-100 }} />
+        <div style={{ position:'absolute', width:500, height:500, borderRadius:'50%', background:'radial-gradient(circle, rgba(5,150,105,0.15) 0%, transparent 70%)', bottom:-100, right:-100 }} />
+        <div style={{ position:'absolute', width:400, height:400, borderRadius:'50%', background:'radial-gradient(circle, rgba(37,99,235,0.12) 0%, transparent 70%)', top:'50%', left:'50%', transform:'translate(-50%,-50%)' }} />
+      </div>
+
+      {/* Header */}
+      <header ref={headerRef} style={{
+        position:'fixed', top:0, left:0, right:0, zIndex:50,
+        background: scrolled ? 'rgba(15,12,41,0.8)' : 'rgba(15,12,41,0.4)',
+        backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)',
+        borderBottom:'1px solid rgba(255,255,255,0.08)',
+        transition:'background 0.3s',
+      }}>
         <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
+            {/* Logo */}
             <div className="flex items-center gap-8">
-              <NavLink to={ROUTE_PATHS.HOME} className="flex items-center gap-2">
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="flex items-center gap-2">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent shadow-lg">
-                    <Zap className="h-6 w-6 text-primary-foreground" />
-                  </div>
-                  <span className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                    FinBack AI
-                  </span>
+              <NavLink to={ROUTE_PATHS.HOME} className="flex items-center gap-2.5">
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                  style={{ width:38, height:38, borderRadius:12, background:'linear-gradient(135deg,#7c3aed,#4f46e5)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 20px rgba(124,58,237,0.4)' }}>
+                  <Zap className="h-5 w-5 text-white" />
                 </motion.div>
+                <span style={{ fontSize:18, fontWeight:700, background:'linear-gradient(135deg,#a78bfa,#60a5fa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>
+                  FinBack AI
+                </span>
               </NavLink>
 
+              {/* Desktop nav */}
               <nav className="hidden md:flex items-center gap-1">
                 {navigationItems.map((item) => (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    className={({ isActive }) =>
-                      `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                        isActive
-                          ? 'bg-primary text-primary-foreground shadow-md'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                      }`
-                    }
-                  >
-                    {({ isActive }) => (
-                      <>
-                        <item.icon className="h-4 w-4" />
-                        {item.label}
-                        {isActive && (
-                          <motion.div
-                            layoutId="activeNav"
-                            className="absolute inset-0 rounded-lg bg-primary/10"
-                            style={{ zIndex: -1 }}
-                          />
-                        )}
-                      </>
-                    )}
+                  <NavLink key={item.to} to={item.to}
+                    className={({ isActive }) => isActive ? '' : ''}
+                    style={({ isActive }) => ({
+                      display:'flex', alignItems:'center', gap:6, padding:'7px 14px',
+                      borderRadius:10, fontSize:13, fontWeight:500, transition:'all 0.2s',
+                      background: isActive ? 'rgba(124,58,237,0.25)' : 'transparent',
+                      color: isActive ? '#a78bfa' : 'rgba(255,255,255,0.55)',
+                      border: isActive ? '1px solid rgba(124,58,237,0.3)' : '1px solid transparent',
+                    })}>
+                    <item.icon className="h-4 w-4" />
+                    {item.label}
                   </NavLink>
                 ))}
               </nav>
             </div>
 
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={() => setIsDarkMode(!isDarkMode)} className="rounded-lg">
-                {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-              </Button>
+            {/* Right actions */}
+            <div className="flex items-center gap-2">
+              {/* Dark mode toggle */}
+              <button onClick={() => setIsDarkMode(!isDarkMode)}
+                style={{ width:36, height:36, borderRadius:10, background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,0.6)', cursor:'pointer' }}>
+                {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </button>
 
               {isAuthenticated && user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                      <Avatar className="h-10 w-10 ring-2 ring-primary/20">
-                        <AvatarFallback className="bg-primary text-primary-foreground">
-                          {avatarInitial}
-                        </AvatarFallback>
-                      </Avatar>
-                    </Button>
+                    <button style={{ width:36, height:36, borderRadius:'50%', background:'linear-gradient(135deg,#7c3aed,#4f46e5)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, fontWeight:700, color:'#fff', cursor:'pointer', border:'2px solid rgba(167,139,250,0.3)', boxShadow:'0 0 15px rgba(124,58,237,0.3)' }}>
+                      {avatarInitial}
+                    </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuContent align="end" className="w-56" style={{ background:'rgba(15,12,41,0.95)', backdropFilter:'blur(20px)', border:'1px solid rgba(255,255,255,0.1)' }}>
                     <DropdownMenuLabel>
                       <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium">{displayName}</p>
-                        <p className="text-xs text-muted-foreground">{displayEmail}</p>
+                        <p className="text-sm font-medium text-white">{displayName}</p>
+                        <p className="text-xs" style={{ color:'rgba(255,255,255,0.4)' }}>{displayEmail}</p>
                       </div>
                     </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
+                    <DropdownMenuSeparator style={{ background:'rgba(255,255,255,0.08)' }} />
                     <DropdownMenuItem asChild>
-                      <NavLink to={ROUTE_PATHS.DASHBOARD} className="flex items-center gap-2 cursor-pointer">
-                        <User className="h-4 w-4" />
-                        Dashboard
+                      <NavLink to={ROUTE_PATHS.DASHBOARD} className="flex items-center gap-2 cursor-pointer" style={{ color:'rgba(255,255,255,0.7)' }}>
+                        <User className="h-4 w-4" />Dashboard
                       </NavLink>
                     </DropdownMenuItem>
                     {isAdmin() && (
                       <DropdownMenuItem asChild>
-                        <NavLink to={ROUTE_PATHS.ADMIN} className="flex items-center gap-2 cursor-pointer">
-                          <Shield className="h-4 w-4" />
-                          Admin Panel
+                        <NavLink to={ROUTE_PATHS.ADMIN} className="flex items-center gap-2 cursor-pointer" style={{ color:'rgba(255,255,255,0.7)' }}>
+                          <Shield className="h-4 w-4" />Admin Panel
                         </NavLink>
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => signOut()}
-                      className="flex items-center gap-2 cursor-pointer text-destructive"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Logout
+                    <DropdownMenuSeparator style={{ background:'rgba(255,255,255,0.08)' }} />
+                    <DropdownMenuItem onClick={() => signOut()} className="flex items-center gap-2 cursor-pointer" style={{ color:'#f87171' }}>
+                      <LogOut className="h-4 w-4" />Logout
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <Button asChild className="hidden md:flex">
-                  <NavLink to={ROUTE_PATHS.AUTH}>Sign In</NavLink>
-                </Button>
+                <NavLink to={ROUTE_PATHS.AUTH}
+                  style={{ padding:'8px 18px', borderRadius:10, background:'linear-gradient(135deg,rgba(124,58,237,0.5),rgba(79,70,229,0.5))', border:'1px solid rgba(124,58,237,0.4)', color:'#e9d5ff', fontSize:13, fontWeight:500, textDecoration:'none', display:'none' }}
+                  className="md:flex items-center">
+                  Sign In
+                </NavLink>
               )}
 
+              {/* Mobile menu */}
               <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                 <SheetTrigger asChild className="md:hidden">
-                  <Button variant="ghost" size="icon" className="rounded-lg">
-                    <Menu className="h-6 w-6" />
-                  </Button>
+                  <button style={{ width:36, height:36, borderRadius:10, background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,0.6)', cursor:'pointer' }}>
+                    <Menu className="h-5 w-5" />
+                  </button>
                 </SheetTrigger>
-                <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-                  <nav className="flex flex-col gap-4 mt-8">
+                <SheetContent side="right" className="w-[280px]" style={{ background:'rgba(15,12,41,0.98)', backdropFilter:'blur(30px)', border:'1px solid rgba(255,255,255,0.1)' }}>
+                  <nav className="flex flex-col gap-2 mt-8">
                     {navigationItems.map((item) => (
-                      <NavLink
-                        key={item.to}
-                        to={item.to}
-                        className={({ isActive }) =>
-                          `flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 ${
-                            isActive
-                              ? 'bg-primary text-primary-foreground shadow-md'
-                              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                          }`
-                        }
-                      >
+                      <NavLink key={item.to} to={item.to}
+                        style={({ isActive }) => ({
+                          display:'flex', alignItems:'center', gap:10, padding:'11px 16px',
+                          borderRadius:12, fontSize:14, fontWeight:500,
+                          background: isActive ? 'rgba(124,58,237,0.2)' : 'rgba(255,255,255,0.04)',
+                          color: isActive ? '#a78bfa' : 'rgba(255,255,255,0.6)',
+                          border: isActive ? '1px solid rgba(124,58,237,0.3)' : '1px solid rgba(255,255,255,0.06)',
+                          textDecoration:'none',
+                        })}>
                         <item.icon className="h-5 w-5" />
                         {item.label}
                       </NavLink>
                     ))}
                     {!isAuthenticated && (
-                      <Button asChild className="mt-4">
-                        <NavLink to={ROUTE_PATHS.AUTH}>Sign In</NavLink>
-                      </Button>
+                      <NavLink to={ROUTE_PATHS.AUTH} style={{ marginTop:8, padding:'11px 16px', borderRadius:12, background:'linear-gradient(135deg,rgba(124,58,237,0.4),rgba(79,70,229,0.4))', border:'1px solid rgba(124,58,237,0.3)', color:'#e9d5ff', fontSize:14, fontWeight:500, textAlign:'center', textDecoration:'none', display:'block' }}>
+                        Sign In
+                      </NavLink>
                     )}
                   </nav>
                 </SheetContent>
@@ -210,61 +195,55 @@ export function Layout({ children }: LayoutProps) {
         </div>
       </header>
 
-      <main style={{ paddingTop: `${headerHeight}px` }} className="min-h-screen">
+      {/* Main */}
+      <main style={{ paddingTop: headerHeight, position:'relative', zIndex:1 }}>
         <AnimatePresence mode="wait">
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.2 }}
-          >
+          <motion.div key={location.pathname}
+            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.25 }}>
             {children}
           </motion.div>
         </AnimatePresence>
       </main>
 
-      <footer className="border-t border-border/50 bg-card/50 backdrop-blur">
+      {/* Footer */}
+      <footer style={{ borderTop:'1px solid rgba(255,255,255,0.06)', background:'rgba(0,0,0,0.2)', backdropFilter:'blur(20px)', position:'relative', zIndex:1 }}>
         <div className="container mx-auto px-4 py-12">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent">
-                  <Zap className="h-5 w-5 text-primary-foreground" />
+                <div style={{ width:32, height:32, borderRadius:8, background:'linear-gradient(135deg,#7c3aed,#4f46e5)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <Zap className="h-4 w-4 text-white" />
                 </div>
-                <span className="text-lg font-bold">FinBack AI</span>
+                <span style={{ fontSize:16, fontWeight:700, color:'#fff' }}>FinBack AI</span>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p style={{ fontSize:13, color:'rgba(255,255,255,0.4)', lineHeight:1.6 }}>
                 AI-powered smart lost and found platform for colleges. Never lose track of your belongings again.
               </p>
             </div>
-            <div>
-              <h3 className="font-semibold mb-4">Platform</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><NavLink to={ROUTE_PATHS.BROWSE} className="hover:text-foreground transition-colors">Browse Items</NavLink></li>
-                <li><NavLink to={ROUTE_PATHS.SUBMIT} className="hover:text-foreground transition-colors">Submit Item</NavLink></li>
-                <li><NavLink to={ROUTE_PATHS.MATCHES} className="hover:text-foreground transition-colors">View Matches</NavLink></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-4">Company</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition-colors">About Us</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Contact</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Privacy Policy</a></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-4">Support</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition-colors">Help Center</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Terms of Service</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Report Issue</a></li>
-              </ul>
-            </div>
+            {[
+              { title:'Platform', links:[{label:'Browse Items',to:ROUTE_PATHS.BROWSE},{label:'Submit Item',to:ROUTE_PATHS.SUBMIT},{label:'View Matches',to:ROUTE_PATHS.MATCHES}] },
+              { title:'Company', links:[{label:'About Us',to:'#'},{label:'Contact',to:'#'},{label:'Privacy Policy',to:'#'}] },
+              { title:'Support', links:[{label:'Help Center',to:'#'},{label:'Terms of Service',to:'#'},{label:'Report Issue',to:'#'}] },
+            ].map((col) => (
+              <div key={col.title}>
+                <h3 style={{ fontWeight:600, color:'rgba(255,255,255,0.7)', marginBottom:16, fontSize:14 }}>{col.title}</h3>
+                <ul className="space-y-2">
+                  {col.links.map((l) => (
+                    <li key={l.label}>
+                      <NavLink to={l.to} style={{ fontSize:13, color:'rgba(255,255,255,0.35)', textDecoration:'none' }}
+                        onMouseEnter={e => (e.currentTarget.style.color='rgba(255,255,255,0.7)') }
+                        onMouseLeave={e => (e.currentTarget.style.color='rgba(255,255,255,0.35)')}>
+                        {l.label}
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
-          <div className="mt-12 pt-8 border-t border-border/50 text-center text-sm text-muted-foreground">
-            <p>© 2026 FinBack AI. All rights reserved.</p>
+          <div style={{ marginTop:48, paddingTop:24, borderTop:'1px solid rgba(255,255,255,0.06)', textAlign:'center', fontSize:12, color:'rgba(255,255,255,0.25)' }}>
+            © 2026 FinBack AI. All rights reserved.
           </div>
         </div>
       </footer>
