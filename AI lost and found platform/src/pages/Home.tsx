@@ -2,11 +2,8 @@ import { Link } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
 import { useRef, useMemo } from 'react';
 import { Brain, Zap, Shield, TrendingUp, Users, MapPin, Clock, CheckCircle, ArrowRight, Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { ROUTE_PATHS, calculateMatchScore, getDistanceInKm, getDaysDifference, normalizeScore } from '@/lib/index';
 import { useItems } from '@/hooks/useItems';
-import { springPresets, staggerContainer, staggerItem } from '@/lib/motion';
 
 function FadeUp({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
   const ref = useRef(null);
@@ -19,7 +16,6 @@ function FadeUp({ children, delay = 0, className = '' }: { children: React.React
   );
 }
 
-// ── Build top matches from real data ─────────────────────────────────────────
 function buildTopMatches(lostItems: any[], foundItems: any[]) {
   const results: any[] = [];
   for (const lost of lostItems) {
@@ -29,12 +25,8 @@ function buildTopMatches(lostItems: any[], foundItems: any[]) {
       const foundWords = (found.title + ' ' + found.description).toLowerCase().split(/\s+/);
       const shared = lostWords.filter((w: string) => w.length > 3 && foundWords.includes(w)).length;
       const textSim = Math.min(1, sameCategory * 0.5 + (shared / Math.max(lostWords.length, 1)) * 0.5);
-      const locationProx = normalizeScore(
-        getDistanceInKm(lost.location_lat || 0, lost.location_lng || 0, found.location_lat || 0, found.location_lng || 0), 10
-      );
-      const lostDate = new Date(lost.date_lost || lost.created_at);
-      const foundDate = new Date(found.date_found || found.created_at);
-      const timeProx = normalizeScore(getDaysDifference(lostDate, foundDate), 30);
+      const locationProx = normalizeScore(getDistanceInKm(lost.location_lat||0,lost.location_lng||0,found.location_lat||0,found.location_lng||0), 10);
+      const timeProx = normalizeScore(getDaysDifference(new Date(lost.date_lost||lost.created_at), new Date(found.date_found||found.created_at)), 30);
       const imageSim = sameCategory === 0.8 ? 0.65 : 0.3;
       const score = calculateMatchScore(imageSim, textSim, locationProx, timeProx);
       if (score >= 0.3) results.push({ lost, found, score });
@@ -43,148 +35,113 @@ function buildTopMatches(lostItems: any[], foundItems: any[]) {
   return results.sort((a, b) => b.score - a.score).slice(0, 3);
 }
 
-// ── Live dashboard mockup ─────────────────────────────────────────────────────
+const glass = {
+  background: 'rgba(255,255,255,0.06)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: 20,
+} as React.CSSProperties;
+
 function DashboardMockup() {
   const { lostItems, foundItems, items, loading } = useItems();
-
-  // Real stats
-  const todayItems = items.filter(i => {
-    const d = new Date(i.created_at);
-    const today = new Date();
-    return d.toDateString() === today.toDateString();
-  }).length;
-
-  // Weekly bar chart from real data (last 7 days)
+  const todayItems = items.filter(i => new Date(i.created_at).toDateString() === new Date().toDateString()).length;
   const weeklyBars = useMemo(() => {
     const days: number[] = [];
     for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const count = items.filter(item => new Date(item.created_at).toDateString() === d.toDateString()).length;
-      days.push(count);
+      const d = new Date(); d.setDate(d.getDate() - i);
+      days.push(items.filter(item => new Date(item.created_at).toDateString() === d.toDateString()).length);
     }
     const max = Math.max(...days, 1);
-    return days.map(c => Math.round((c / max) * 100) || 4); // min 4% for visibility
+    return days.map(c => Math.round((c / max) * 100) || 4);
   }, [items]);
 
-  // Real top matches
   const topMatches = useMemo(() => buildTopMatches(lostItems, foundItems), [lostItems, foundItems]);
-
-  // Fallback display matches when no real matches yet
   const displayMatches = topMatches.length > 0
-    ? topMatches.map(m => ({
-        emoji: '📦',
-        title: m.lost.title,
-        loc: m.found.location_name || 'Unknown',
-        pct: Math.round(m.score * 100),
-        high: m.score > 0.7,
-      }))
-    : [
-        { emoji: '👜', title: 'Black Wallet', loc: 'Main Library', pct: 94, high: true },
-        { emoji: '💻', title: 'MacBook Pro 14"', loc: 'Engineering Bldg', pct: 89, high: true },
-        { emoji: '🎧', title: 'AirPods Pro', loc: 'Gym Locker', pct: 76, high: false },
-      ];
-
-  const totalMatches = topMatches.length;
-  // Accuracy: % of found items that have at least one match above 70%
-  const accuracy = foundItems.length > 0
-    ? Math.round((topMatches.filter(m => m.score > 0.7).length / Math.max(foundItems.length, 1)) * 100)
-    : 94;
+    ? topMatches.map(m => ({ emoji:'📦', title:m.lost.title, loc:m.found.location_name||'Unknown', pct:Math.round(m.score*100), high:m.score>0.7 }))
+    : [{ emoji:'👜', title:'Black Wallet', loc:'Main Library', pct:94, high:true }, { emoji:'💻', title:'MacBook Pro 14"', loc:'Engineering Bldg', pct:89, high:true }, { emoji:'🎧', title:'AirPods Pro', loc:'Gym Locker', pct:76, high:false }];
+  const accuracy = foundItems.length > 0 ? Math.round((topMatches.filter(m=>m.score>0.7).length / Math.max(foundItems.length,1)) * 100) : 94;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 32, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ delay: 0.3, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-      className="relative w-full max-w-lg mx-auto lg:mx-0"
-    >
-      <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-3xl scale-90 -z-10" />
+    <motion.div initial={{ opacity:0, y:32, scale:0.95 }} animate={{ opacity:1, y:0, scale:1 }} transition={{ delay:0.3, duration:0.8, ease:[0.22,1,0.36,1] }}
+      style={{ position:'relative', maxWidth:480, width:'100%', marginLeft:'auto' }}>
+      {/* Glow */}
+      <div style={{ position:'absolute', inset:0, background:'radial-gradient(ellipse at center, rgba(124,58,237,0.25) 0%, transparent 70%)', borderRadius:24, transform:'scale(0.9) translateY(10%)', filter:'blur(30px)', zIndex:0 }} />
 
-      <div className="bg-card border border-border/60 rounded-2xl overflow-hidden shadow-2xl">
+      <div style={{ ...glass, overflow:'hidden', position:'relative', zIndex:1, boxShadow:'0 25px 60px rgba(0,0,0,0.4)' }}>
         {/* Browser chrome */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50 bg-muted/30">
-          <div className="flex gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-red-500/60" />
-            <div className="w-3 h-3 rounded-full bg-amber-500/60" />
-            <div className="w-3 h-3 rounded-full bg-emerald-500/60" />
+        <div style={{ display:'flex', alignItems:'center', gap:8, padding:'12px 16px', borderBottom:'1px solid rgba(255,255,255,0.06)', background:'rgba(0,0,0,0.2)' }}>
+          <div style={{ display:'flex', gap:5 }}>
+            {['rgba(239,68,68,0.5)','rgba(251,191,36,0.5)','rgba(52,211,153,0.5)'].map((c,i) => (
+              <div key={i} style={{ width:11, height:11, borderRadius:'50%', background:c }} />
+            ))}
           </div>
-          <div className="flex-1 flex justify-center">
-            <span className="text-xs text-muted-foreground font-mono">finback-ai.vercel.app</span>
+          <div style={{ flex:1, display:'flex', justifyContent:'center' }}>
+            <span style={{ fontSize:11, color:'rgba(255,255,255,0.3)', fontFamily:'monospace' }}>finback-ai.vercel.app</span>
           </div>
         </div>
 
-        <div className="p-5 space-y-4">
-          {/* Real-time stats row */}
-          <div className="grid grid-cols-3 gap-3">
+        <div style={{ padding:20 }}>
+          {/* Stats row */}
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginBottom:14 }}>
             {[
-              { label: 'Items Today', value: loading ? '—' : String(todayItems), color: 'text-primary' },
-              { label: 'Matches', value: loading ? '—' : String(totalMatches || lostItems.length), color: 'text-emerald-400' },
-              { label: 'Accuracy', value: loading ? '—' : `${accuracy}%`, color: 'text-amber-400' },
-            ].map((s, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 + i * 0.1 }}
-                className="bg-muted/40 border border-border/50 rounded-xl p-3 text-center">
-                <div className={`text-xl font-bold font-mono ${s.color}`}>{s.value}</div>
-                <div className="text-[10px] text-muted-foreground mt-0.5">{s.label}</div>
+              { label:'Items Today', value:loading?'—':String(todayItems), color:'#a78bfa' },
+              { label:'Matches', value:loading?'—':String(topMatches.length||lostItems.length), color:'#34d399' },
+              { label:'Accuracy', value:loading?'—':`${accuracy}%`, color:'#fbbf24' },
+            ].map((s,i) => (
+              <motion.div key={i} initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.5+i*0.1 }}
+                style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:12, padding:'12px 8px', textAlign:'center' }}>
+                <div style={{ fontSize:20, fontWeight:700, color:s.color, fontFamily:'monospace' }}>{s.value}</div>
+                <div style={{ fontSize:10, color:'rgba(255,255,255,0.35)', marginTop:3 }}>{s.label}</div>
               </motion.div>
             ))}
           </div>
 
-          {/* Real weekly chart */}
-          <div className="bg-muted/30 border border-border/40 rounded-xl p-3">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold text-muted-foreground">Weekly Items</span>
-              <span className="text-[10px] text-emerald-400 font-mono">
-                {loading ? '...' : `${items.length} total`}
-              </span>
+          {/* Weekly chart */}
+          <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:14, padding:14, marginBottom:14 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:10 }}>
+              <span style={{ fontSize:11, color:'rgba(255,255,255,0.4)', fontWeight:500 }}>Weekly Items</span>
+              <span style={{ fontSize:10, color:'#34d399', fontFamily:'monospace' }}>{loading?'...': `${items.length} total`}</span>
             </div>
-            <div className="flex items-end gap-1.5 h-16">
-              {weeklyBars.map((h, i) => (
-                <motion.div key={i} className="flex-1 rounded-t-sm"
-                  style={{ background: i === 6 ? 'hsl(var(--primary))' : 'hsl(var(--primary) / 0.3)' }}
-                  initial={{ height: 0 }}
-                  animate={{ height: `${h}%` }}
-                  transition={{ delay: 0.7 + i * 0.07, duration: 0.5, ease: 'easeOut' }}
-                />
+            <div style={{ display:'flex', alignItems:'flex-end', gap:4, height:56 }}>
+              {weeklyBars.map((h,i) => (
+                <motion.div key={i} style={{ flex:1, borderRadius:'4px 4px 0 0', background: i===6 ? 'linear-gradient(180deg,#7c3aed,#4f46e5)' : 'rgba(124,58,237,0.25)' }}
+                  initial={{ height:0 }} animate={{ height:`${h}%` }} transition={{ delay:0.7+i*0.07, duration:0.5, ease:'easeOut' }} />
               ))}
             </div>
-            <div className="flex justify-between mt-1.5">
-              {['M','T','W','T','F','S','S'].map((d, i) => (
-                <span key={i} className="flex-1 text-center text-[9px] text-muted-foreground">{d}</span>
+            <div style={{ display:'flex', marginTop:6 }}>
+              {['M','T','W','T','F','S','S'].map((d,i) => (
+                <span key={i} style={{ flex:1, textAlign:'center', fontSize:9, color:'rgba(255,255,255,0.25)' }}>{d}</span>
               ))}
             </div>
           </div>
 
-          {/* AI Matches list — real or fallback */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold flex items-center gap-1.5">
-                <Sparkles className="w-3 h-3 text-primary" /> AI Matches
+          {/* Matches */}
+          <div style={{ marginBottom:4 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:10 }}>
+              <span style={{ fontSize:11, fontWeight:500, color:'rgba(255,255,255,0.7)', display:'flex', alignItems:'center', gap:5 }}>
+                <Sparkles style={{ width:12, height:12, color:'#a78bfa' }} /> AI Matches
               </span>
-              <span className="text-[10px] text-emerald-400 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
+              <span style={{ fontSize:10, color:'#34d399', display:'flex', alignItems:'center', gap:4 }}>
+                <span style={{ width:6, height:6, borderRadius:'50%', background:'#34d399', display:'inline-block', animation:'pulse 2s infinite' }} />
                 {topMatches.length > 0 ? 'Live' : 'Demo'}
               </span>
             </div>
-            {displayMatches.map((m, i) => (
-              <motion.div key={i} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 1 + i * 0.15 }}
-                className="flex items-center gap-2.5 bg-muted/40 border border-border/40 rounded-xl p-2.5">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-sm flex-shrink-0">
-                  {m.emoji}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold truncate">{m.title}</p>
-                  <p className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                    <MapPin className="w-2.5 h-2.5" />{m.loc}
+            {displayMatches.map((m,i) => (
+              <motion.div key={i} initial={{ opacity:0, x:-12 }} animate={{ opacity:1, x:0 }} transition={{ delay:1+i*0.15 }}
+                style={{ display:'flex', alignItems:'center', gap:10, background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:12, padding:10, marginBottom:8 }}>
+                <div style={{ width:32, height:32, borderRadius:9, background:'rgba(124,58,237,0.15)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 }}>{m.emoji}</div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <p style={{ fontSize:12, fontWeight:600, color:'rgba(255,255,255,0.85)', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{m.title}</p>
+                  <p style={{ fontSize:10, color:'rgba(255,255,255,0.35)', margin:'2px 0 0', display:'flex', alignItems:'center', gap:2 }}>
+                    <MapPin style={{ width:9, height:9 }} />{m.loc}
                   </p>
                 </div>
-                <div className="text-right flex-shrink-0">
-                  <span className={`text-xs font-bold font-mono ${m.high ? 'text-emerald-400' : 'text-amber-400'}`}>{m.pct}%</span>
-                  <div className="w-12 h-1 bg-muted rounded-full overflow-hidden mt-1">
-                    <motion.div className={`h-full rounded-full ${m.high ? 'bg-emerald-500' : 'bg-amber-500'}`}
-                      initial={{ width: 0 }} animate={{ width: `${m.pct}%` }}
-                      transition={{ delay: 1.2 + i * 0.15, duration: 0.8 }} />
+                <div style={{ textAlign:'right', flexShrink:0 }}>
+                  <span style={{ fontSize:12, fontWeight:700, fontFamily:'monospace', color: m.high ? '#34d399' : '#fbbf24' }}>{m.pct}%</span>
+                  <div style={{ width:44, height:3, background:'rgba(255,255,255,0.06)', borderRadius:2, overflow:'hidden', marginTop:4 }}>
+                    <motion.div style={{ height:'100%', borderRadius:2, background: m.high ? '#34d399' : '#fbbf24' }}
+                      initial={{ width:0 }} animate={{ width:`${m.pct}%` }} transition={{ delay:1.2+i*0.15, duration:0.8 }} />
                   </div>
                 </div>
               </motion.div>
@@ -194,172 +151,171 @@ function DashboardMockup() {
       </div>
 
       {/* Floating chips */}
-      <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 1.5 }}
-        className="absolute -left-14 top-16 bg-card border border-border/60 rounded-xl px-3 py-2 shadow-xl hidden lg:block">
-        <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Items lost</p>
-        <p className="text-base font-bold">{loading ? '—' : lostItems.length} items</p>
-        <p className="text-[10px] text-muted-foreground">reported</p>
+      <motion.div initial={{ opacity:0, x:-20 }} animate={{ opacity:1, x:0 }} transition={{ delay:1.5 }}
+        style={{ position:'absolute', left:-120, top:60, ...glass, padding:'10px 14px', display:'none' }} className="lg:block">
+        <p style={{ fontSize:9, color:'rgba(255,255,255,0.35)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:3 }}>Items lost</p>
+        <p style={{ fontSize:15, fontWeight:700, color:'#fff', margin:0 }}>{loading?'—':lostItems.length} items</p>
+        <p style={{ fontSize:10, color:'rgba(255,255,255,0.35)', marginTop:1 }}>reported</p>
       </motion.div>
-
-      <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 1.8 }}
-        className="absolute -left-10 bottom-20 bg-card border border-border/60 rounded-xl px-3 py-2 shadow-xl hidden lg:block">
-        <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Items found</p>
-        <p className="text-base font-bold">{loading ? '—' : foundItems.length} items</p>
-        <p className="text-[10px] text-emerald-400">submitted by finders</p>
+      <motion.div initial={{ opacity:0, x:-20 }} animate={{ opacity:1, x:0 }} transition={{ delay:1.8 }}
+        style={{ position:'absolute', left:-100, bottom:80, ...glass, padding:'10px 14px', display:'none' }} className="lg:block">
+        <p style={{ fontSize:9, color:'rgba(255,255,255,0.35)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:3 }}>Items found</p>
+        <p style={{ fontSize:15, fontWeight:700, color:'#fff', margin:0 }}>{loading?'—':foundItems.length} items</p>
+        <p style={{ fontSize:10, color:'#34d399', marginTop:1 }}>submitted by finders</p>
       </motion.div>
     </motion.div>
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
 export default function Home() {
   const { items, lostItems, foundItems, loading } = useItems();
-
   const todayCount = items.filter(i => new Date(i.created_at).toDateString() === new Date().toDateString()).length;
   const topMatches = useMemo(() => buildTopMatches(lostItems, foundItems), [lostItems, foundItems]);
 
   const heroStats = [
-    { num: loading ? '—' : `${topMatches.length > 0 ? Math.round((topMatches.filter(m=>m.score>0.7).length/Math.max(foundItems.length,1))*100) : 94}%`, label: 'Match accuracy' },
-    { num: loading ? '—' : `${items.length}`, label: 'Total items' },
-    { num: loading ? '—' : `${lostItems.length + foundItems.length > 0 ? topMatches.length : 0}`, label: 'AI matches made' },
+    { num: loading?'—':`${topMatches.length>0 ? Math.round((topMatches.filter(m=>m.score>0.7).length/Math.max(foundItems.length,1))*100) : 94}%`, label:'Match accuracy' },
+    { num: loading?'—':String(items.length), label:'Total items' },
+    { num: loading?'—':String(lostItems.length+foundItems.length>0 ? topMatches.length : 0), label:'AI matches made' },
   ];
 
   const pageStats = [
-    { label: 'Items Recovered', value: loading ? '—' : String(items.length), icon: CheckCircle },
-    { label: 'Lost Items', value: loading ? '—' : String(lostItems.length), icon: Users },
-    { label: 'Found Items', value: loading ? '—' : String(foundItems.length), icon: TrendingUp },
-    { label: 'Items Today', value: loading ? '—' : String(todayCount), icon: Clock },
+    { label:'Items Recovered', value:loading?'—':String(items.length), icon:CheckCircle },
+    { label:'Lost Items', value:loading?'—':String(lostItems.length), icon:Users },
+    { label:'Found Items', value:loading?'—':String(foundItems.length), icon:TrendingUp },
+    { label:'Items Today', value:loading?'—':String(todayCount), icon:Clock },
   ];
 
   const features = [
-    { icon: Brain, title: 'AI-Powered Matching', description: 'Advanced embeddings analyze images with 94% accuracy, matching lost items to found items in seconds.', accent: 'from-primary/20 to-primary/5', iconBg: 'bg-primary/10 text-primary' },
-    { icon: Zap, title: 'Smart Confidence Scoring', description: 'Multi-factor algorithm weighs image (40%), text (30%), location (20%), and time (10%) for precise matches.', accent: 'from-amber-500/20 to-amber-500/5', iconBg: 'bg-amber-500/10 text-amber-400' },
-    { icon: Shield, title: 'Secure & Private', description: 'JWT authentication, role-based access, and spam detection keep your data safe while connecting matches.', accent: 'from-emerald-500/20 to-emerald-500/5', iconBg: 'bg-emerald-500/10 text-emerald-400' },
+    { icon:Brain, title:'AI-Powered Matching', description:'Advanced embeddings analyze images with 94% accuracy, matching lost items to found items in seconds.', glow:'rgba(124,58,237,0.15)', border:'rgba(124,58,237,0.2)', iconColor:'#a78bfa', iconBg:'rgba(124,58,237,0.15)' },
+    { icon:Zap, title:'Smart Confidence Scoring', description:'Multi-factor algorithm weighs image (40%), text (30%), location (20%), and time (10%) for precise matches.', glow:'rgba(251,191,36,0.1)', border:'rgba(251,191,36,0.15)', iconColor:'#fbbf24', iconBg:'rgba(251,191,36,0.1)' },
+    { icon:Shield, title:'Secure & Private', description:'JWT authentication, role-based access, and spam detection keep your data safe while connecting matches.', glow:'rgba(52,211,153,0.1)', border:'rgba(52,211,153,0.15)', iconColor:'#34d399', iconBg:'rgba(52,211,153,0.1)' },
   ];
 
   const howItWorks = [
-    { step: '01', title: 'Report Your Item', description: 'Upload a photo, add details, and pin your location.' },
-    { step: '02', title: 'AI Analyzes & Matches', description: 'Neural network scans all items and ranks potential matches.' },
-    { step: '03', title: 'Get Notified', description: 'Instant alerts when match confidence exceeds 80%.' },
-    { step: '04', title: 'Connect & Recover', description: 'Contact the finder securely and reunite with your item.' },
+    { step:'01', title:'Report Your Item', description:'Upload a photo, add details, and pin your location.' },
+    { step:'02', title:'AI Analyzes & Matches', description:'Neural network scans all items and ranks potential matches.' },
+    { step:'03', title:'Get Notified', description:'Instant alerts when match confidence exceeds 80%.' },
+    { step:'04', title:'Connect & Recover', description:'Contact the finder securely and reunite with your item.' },
   ];
 
+  const btnPrimary: React.CSSProperties = {
+    display:'inline-flex', alignItems:'center', gap:8, padding:'13px 24px', borderRadius:14,
+    background:'linear-gradient(135deg,rgba(124,58,237,0.6),rgba(79,70,229,0.6))',
+    border:'1px solid rgba(124,58,237,0.4)', color:'#e9d5ff', fontSize:15, fontWeight:600,
+    textDecoration:'none', cursor:'pointer', transition:'all 0.2s',
+    boxShadow:'0 0 30px rgba(124,58,237,0.25)',
+  };
+  const btnOutline: React.CSSProperties = {
+    display:'inline-flex', alignItems:'center', gap:8, padding:'13px 24px', borderRadius:14,
+    background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.12)',
+    color:'rgba(255,255,255,0.7)', fontSize:15, fontWeight:500, textDecoration:'none', cursor:'pointer',
+  };
+
   return (
-    <div className="min-h-screen bg-background">
+    <div style={{ minHeight:'100vh' }}>
 
       {/* ── HERO ── */}
-      <section className="relative min-h-screen flex items-center pt-20 pb-16 overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -left-20 w-[500px] h-[500px] rounded-full bg-primary/8 blur-[100px] animate-pulse" />
-          <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-accent/6 blur-[100px] animate-pulse [animation-delay:3s]" />
-        </div>
-
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+      <section style={{ minHeight:'100vh', display:'flex', alignItems:'center', padding:'80px 16px 64px', position:'relative', overflow:'hidden' }}>
+        <div style={{ maxWidth:1200, margin:'0 auto', width:'100%' }}>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr', gap:40, alignItems:'center' }} className="lg:grid-cols-2">
             <div>
-              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium mb-8">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+              <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }}
+                style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'6px 14px', borderRadius:20, background:'rgba(124,58,237,0.1)', border:'1px solid rgba(124,58,237,0.2)', marginBottom:28 }}>
+                <span style={{ position:'relative', display:'inline-flex', width:8, height:8 }}>
+                  <span style={{ position:'absolute', display:'inline-flex', width:'100%', height:'100%', borderRadius:'50%', background:'#34d399', opacity:0.75, animation:'ping 1.5s cubic-bezier(0,0,0.2,1) infinite' }} />
+                  <span style={{ position:'relative', display:'inline-flex', width:8, height:8, borderRadius:'50%', background:'#34d399' }} />
                 </span>
-                AI-Powered Lost & Found — Campus Edition
+                <span style={{ fontSize:12, color:'#a78bfa', fontWeight:500 }}>AI-Powered Lost & Found — Campus Edition</span>
               </motion.div>
 
-              <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1, duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-                className="text-5xl lg:text-6xl font-bold leading-[1.05] tracking-tight mb-6">
+              <motion.h1 initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.1, duration:0.65, ease:[0.22,1,0.36,1] }}
+                style={{ fontSize:56, fontWeight:800, lineHeight:1.05, letterSpacing:'-0.02em', marginBottom:20, color:'#fff' }}>
                 Never Lose
-                <span className="block bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                <span style={{ display:'block', background:'linear-gradient(135deg, #a78bfa, #60a5fa, #34d399)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>
                   Anything Again
                 </span>
               </motion.h1>
 
-              <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="text-lg text-muted-foreground leading-relaxed mb-10 max-w-lg font-light">
-                FinBack AI uses advanced neural networks to match lost and found items across your campus.
-                Smart, fast, and built for college students.
+              <motion.p initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.2 }}
+                style={{ fontSize:17, color:'rgba(255,255,255,0.5)', lineHeight:1.7, marginBottom:36, maxWidth:480 }}>
+                FinBack AI uses advanced neural networks to match lost and found items across your campus. Smart, fast, and built for college students.
               </motion.p>
 
-              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }} className="flex flex-wrap gap-3 mb-12">
-                <Button asChild size="lg" className="gap-2 shadow-lg shadow-primary/20 text-base px-6">
-                  <Link to={ROUTE_PATHS.AUTH}>Get Started Free <ArrowRight className="w-4 h-4" /></Link>
-                </Button>
-                <Button asChild variant="outline" size="lg" className="text-base px-6">
-                  <Link to={ROUTE_PATHS.BROWSE}>Browse Items</Link>
-                </Button>
+              <motion.div initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.3 }}
+                style={{ display:'flex', flexWrap:'wrap', gap:12, marginBottom:44 }}>
+                <Link to={ROUTE_PATHS.AUTH} style={btnPrimary}>
+                  Get Started Free <ArrowRight style={{ width:16, height:16 }} />
+                </Link>
+                <Link to={ROUTE_PATHS.BROWSE} style={btnOutline}>Browse Items</Link>
               </motion.div>
 
-              {/* Real-time hero stats */}
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.45 }}
-                className="flex items-center gap-6 pt-8 border-t border-border/50">
-                {heroStats.map((s, i) => (
-                  <div key={i} className="flex items-center gap-5">
-                    {i > 0 && <div className="w-px h-8 bg-border" />}
+              {/* Hero stats */}
+              <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.45 }}
+                style={{ display:'flex', alignItems:'center', gap:24, paddingTop:28, borderTop:'1px solid rgba(255,255,255,0.08)' }}>
+                {heroStats.map((s,i) => (
+                  <div key={i} style={{ display:'flex', alignItems:'center', gap:20 }}>
+                    {i > 0 && <div style={{ width:1, height:32, background:'rgba(255,255,255,0.08)' }} />}
                     <div>
-                      <div className="text-xl font-bold tracking-tight">{s.num}</div>
-                      <div className="text-xs text-muted-foreground">{s.label}</div>
+                      <div style={{ fontSize:22, fontWeight:700, color:'#fff', letterSpacing:'-0.01em' }}>{s.num}</div>
+                      <div style={{ fontSize:12, color:'rgba(255,255,255,0.35)' }}>{s.label}</div>
                     </div>
                   </div>
                 ))}
               </motion.div>
             </div>
-
             <DashboardMockup />
           </div>
         </div>
       </section>
 
-      {/* ── LIVE STATS STRIP ── */}
-      <div className="border-y border-border/50 bg-card/30 py-14">
-        <div className="container mx-auto px-4">
-          <motion.div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-border/30"
-            variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-            {pageStats.map((stat, i) => {
+      {/* ── STATS STRIP ── */}
+      <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)', borderBottom:'1px solid rgba(255,255,255,0.06)', background:'rgba(0,0,0,0.2)', backdropFilter:'blur(20px)', padding:'48px 16px' }}>
+        <div style={{ maxWidth:1200, margin:'0 auto' }}>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:1, background:'rgba(255,255,255,0.06)' }}>
+            {pageStats.map((stat,i) => {
               const Icon = stat.icon;
               return (
-                <motion.div key={i} variants={staggerItem} className="bg-background text-center py-8 px-6">
-                  <Icon className="w-6 h-6 text-primary mx-auto mb-3" />
-                  <div className="text-3xl font-bold tracking-tight mb-1">{stat.value}</div>
-                  <div className="text-sm text-muted-foreground">{stat.label}</div>
+                <motion.div key={i} initial={{ opacity:0 }} whileInView={{ opacity:1 }} viewport={{ once:true }} transition={{ delay:i*0.08 }}
+                  style={{ background:'rgba(15,12,41,0.8)', textAlign:'center', padding:'36px 24px' }}>
+                  <Icon style={{ width:24, height:24, color:'#a78bfa', margin:'0 auto 12px' }} />
+                  <div style={{ fontSize:32, fontWeight:700, color:'#fff', marginBottom:4 }}>{stat.value}</div>
+                  <div style={{ fontSize:13, color:'rgba(255,255,255,0.4)' }}>{stat.label}</div>
                 </motion.div>
               );
             })}
-          </motion.div>
+          </div>
         </div>
       </div>
 
       {/* ── FEATURES ── */}
-      <section className="py-28">
-        <div className="container mx-auto px-4">
-          <FadeUp className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 text-xs font-mono text-primary uppercase tracking-widest mb-5">
-              <span className="w-5 h-px bg-primary" /> Core Features
+      <section style={{ padding:'80px 16px' }}>
+        <div style={{ maxWidth:1200, margin:'0 auto' }}>
+          <FadeUp style={{ textAlign:'center', marginBottom:56 } as React.CSSProperties}>
+            <div style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:11, color:'#a78bfa', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:16 }}>
+              <span style={{ width:20, height:1, background:'#a78bfa', display:'inline-block' }} /> Core Features
             </div>
-            <h2 className="text-4xl lg:text-5xl font-bold tracking-tight mb-4">
+            <h2 style={{ fontSize:40, fontWeight:700, color:'#fff', marginBottom:14, letterSpacing:'-0.02em' }}>
               Powered by AI,{' '}
-              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">built for students</span>
+              <span style={{ background:'linear-gradient(135deg,#a78bfa,#60a5fa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>built for students</span>
             </h2>
-            <p className="text-lg text-muted-foreground max-w-xl mx-auto font-light">
+            <p style={{ fontSize:16, color:'rgba(255,255,255,0.45)', maxWidth:480, margin:'0 auto', lineHeight:1.6 }}>
               Advanced technology meets intuitive design to reunite you with your belongings.
             </p>
           </FadeUp>
-          <div className="grid md:grid-cols-3 gap-6">
-            {features.map((f, i) => {
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:16 }}>
+            {features.map((f,i) => {
               const Icon = f.icon;
               return (
-                <FadeUp key={i} delay={i * 0.1}>
-                  <Card className={`p-7 h-full border-border/50 hover:border-primary/30 hover:shadow-xl transition-all duration-300 bg-gradient-to-br ${f.accent}`}>
-                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-5 ${f.iconBg}`}>
-                      <Icon className="w-5 h-5" />
+                <FadeUp key={i} delay={i*0.1}>
+                  <div style={{ ...glass, padding:28, height:'100%', background:`rgba(255,255,255,0.04)`, transition:'all 0.3s', boxShadow:`0 0 40px ${f.glow}`, borderColor:f.border }}
+                    onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.transform='translateY(-4px)'}
+                    onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.transform='translateY(0)'}>
+                    <div style={{ width:44, height:44, borderRadius:14, background:f.iconBg, border:`1px solid ${f.border}`, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:20 }}>
+                      <Icon style={{ width:20, height:20, color:f.iconColor }} />
                     </div>
-                    <h3 className="text-xl font-bold mb-3 tracking-tight">{f.title}</h3>
-                    <p className="text-muted-foreground leading-relaxed text-sm font-light">{f.description}</p>
-                  </Card>
+                    <h3 style={{ fontSize:17, fontWeight:700, color:'#fff', marginBottom:10, letterSpacing:'-0.01em' }}>{f.title}</h3>
+                    <p style={{ color:'rgba(255,255,255,0.45)', lineHeight:1.6, fontSize:14, margin:0 }}>{f.description}</p>
+                  </div>
                 </FadeUp>
               );
             })}
@@ -368,28 +324,27 @@ export default function Home() {
       </section>
 
       {/* ── HOW IT WORKS ── */}
-      <section className="py-28 border-t border-border/50 bg-muted/20">
-        <div className="container mx-auto px-4">
-          <FadeUp className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 text-xs font-mono text-primary uppercase tracking-widest mb-5">
-              <span className="w-5 h-px bg-primary" /> How it works
+      <section style={{ padding:'80px 16px', borderTop:'1px solid rgba(255,255,255,0.06)', background:'rgba(0,0,0,0.15)' }}>
+        <div style={{ maxWidth:1200, margin:'0 auto' }}>
+          <FadeUp style={{ textAlign:'center', marginBottom:56 } as React.CSSProperties}>
+            <div style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:11, color:'#a78bfa', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:16 }}>
+              <span style={{ width:20, height:1, background:'#a78bfa', display:'inline-block' }} /> How it works
             </div>
-            <h2 className="text-4xl lg:text-5xl font-bold tracking-tight mb-4">
+            <h2 style={{ fontSize:40, fontWeight:700, color:'#fff', letterSpacing:'-0.02em' }}>
               From lost to found{' '}
-              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">in four steps</span>
+              <span style={{ background:'linear-gradient(135deg,#a78bfa,#60a5fa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>in four steps</span>
             </h2>
           </FadeUp>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {howItWorks.map((item, i) => (
-              <FadeUp key={i} delay={i * 0.1} className="relative">
-                <Card className="p-6 h-full hover:shadow-lg hover:border-primary/30 transition-all duration-300 border-border/50">
-                  <div className="text-5xl font-bold text-primary/10 mb-4 font-mono">{item.step}</div>
-                  <h3 className="text-lg font-bold mb-2 tracking-tight">{item.title}</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed font-light">{item.description}</p>
-                </Card>
-                {i < howItWorks.length - 1 && (
-                  <div className="hidden lg:block absolute top-1/2 -right-3 w-6 h-px bg-gradient-to-r from-primary/50 to-transparent z-10" />
-                )}
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))', gap:14 }}>
+            {howItWorks.map((item,i) => (
+              <FadeUp key={i} delay={i*0.1}>
+                <div style={{ ...glass, padding:24, height:'100%', transition:'all 0.3s' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.borderColor='rgba(124,58,237,0.25)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.borderColor='rgba(255,255,255,0.1)'}>
+                  <div style={{ fontSize:44, fontWeight:800, color:'rgba(124,58,237,0.15)', marginBottom:16, fontFamily:'monospace' }}>{item.step}</div>
+                  <h3 style={{ fontSize:16, fontWeight:700, color:'#fff', marginBottom:8 }}>{item.title}</h3>
+                  <p style={{ color:'rgba(255,255,255,0.4)', fontSize:13, lineHeight:1.6, margin:0 }}>{item.description}</p>
+                </div>
               </FadeUp>
             ))}
           </div>
@@ -397,31 +352,27 @@ export default function Home() {
       </section>
 
       {/* ── CTA ── */}
-      <section className="py-28">
-        <div className="container mx-auto px-4">
+      <section style={{ padding:'80px 16px' }}>
+        <div style={{ maxWidth:1200, margin:'0 auto' }}>
           <FadeUp>
-            <Card className="relative overflow-hidden border-primary/20">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-accent/4 to-transparent" />
-              <div className="absolute top-0 left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent via-primary to-transparent" />
-              <div className="relative z-10 p-12 md:p-16 text-center">
-                <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-5">
-                  Ready to find your{' '}
-                  <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">lost items?</span>
-                </h2>
-                <p className="text-lg text-muted-foreground mb-10 max-w-xl mx-auto font-light">
-                  Join thousands of students already using FinBack AI to recover their belongings.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button asChild size="lg" className="text-base px-8 shadow-lg shadow-primary/20 gap-2">
-                    <Link to={ROUTE_PATHS.AUTH}>Create Free Account <ArrowRight className="w-4 h-4" /></Link>
-                  </Button>
-                  <Button asChild variant="outline" size="lg" className="text-base px-8">
-                    <Link to={ROUTE_PATHS.SUBMIT}>Report an Item</Link>
-                  </Button>
-                </div>
-                <p className="mt-6 text-xs text-muted-foreground">No credit card required · Free campus plan · Cancel anytime</p>
+            <div style={{ ...glass, padding:'60px 40px', textAlign:'center', position:'relative', overflow:'hidden', background:'rgba(124,58,237,0.06)', borderColor:'rgba(124,58,237,0.2)', boxShadow:'0 0 80px rgba(124,58,237,0.1)' }}>
+              {/* Top line */}
+              <div style={{ position:'absolute', top:0, left:'25%', right:'25%', height:1, background:'linear-gradient(90deg,transparent,rgba(124,58,237,0.6),transparent)' }} />
+              <h2 style={{ fontSize:40, fontWeight:700, color:'#fff', marginBottom:16, letterSpacing:'-0.02em' }}>
+                Ready to find your{' '}
+                <span style={{ background:'linear-gradient(135deg,#a78bfa,#60a5fa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>lost items?</span>
+              </h2>
+              <p style={{ fontSize:16, color:'rgba(255,255,255,0.45)', marginBottom:36, maxWidth:480, margin:'0 auto 36px', lineHeight:1.6 }}>
+                Join thousands of students already using FinBack AI to recover their belongings.
+              </p>
+              <div style={{ display:'flex', flexDirection:'column', gap:12, alignItems:'center' }} className="sm:flex-row sm:justify-center">
+                <Link to={ROUTE_PATHS.AUTH} style={{ ...btnPrimary, padding:'14px 32px' }}>
+                  Create Free Account <ArrowRight style={{ width:16, height:16 }} />
+                </Link>
+                <Link to={ROUTE_PATHS.SUBMIT} style={{ ...btnOutline, padding:'14px 32px' }}>Report an Item</Link>
               </div>
-            </Card>
+              <p style={{ marginTop:20, fontSize:12, color:'rgba(255,255,255,0.25)' }}>No credit card required · Free campus plan · Cancel anytime</p>
+            </div>
           </FadeUp>
         </div>
       </section>
