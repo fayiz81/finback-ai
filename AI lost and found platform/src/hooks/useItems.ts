@@ -75,11 +75,35 @@ export function useItems(filters?: { status?: string; search?: string; category?
       // Use a simple clean filename — no special chars, no spaces
       const ext = safeFile.type === 'image/png' ? 'png' : safeFile.type === 'image/webp' ? 'webp' : 'jpg';
       const fileName = `img_${Date.now()}.${ext}`;
+      // Get fresh session to ensure auth token is attached to storage request
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Session before upload:', session?.user?.email, 'token:', !!session?.access_token);
+
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('item-images')
         .upload(fileName, safeFile, { contentType: safeFile.type || 'image/jpeg', upsert: true });
       if (uploadError) {
-        console.error('Image upload error:', JSON.stringify(uploadError));
+        console.error('Image upload error full:', JSON.stringify(uploadError));
+        // Try without auth as fallback (public bucket)
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/item-images/${fileName}`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+              'Content-Type': safeFile.type || 'image/jpeg',
+              'x-upsert': 'true',
+            },
+            body: safeFile,
+          }
+        );
+        if (response.ok) {
+          image_url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/item-images/${fileName}`;
+          console.log('Image uploaded via fallback:', image_url);
+        } else {
+          const errText = await response.text();
+          console.error('Fallback upload failed:', errText);
+        }
       } else if (uploadData) {
         const { data: url } = supabase.storage.from('item-images').getPublicUrl(uploadData.path);
         image_url = url.publicUrl;
