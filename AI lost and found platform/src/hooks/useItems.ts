@@ -72,16 +72,18 @@ export function useItems(filters?: { status?: string; search?: string; category?
     let image_url = null;
     if (imageFile) {
       const safeFile = await convertToJpeg(imageFile);
-      const fileName = `${Date.now()}-${safeFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+      // Use a simple clean filename — no special chars, no spaces
+      const ext = safeFile.type === 'image/png' ? 'png' : safeFile.type === 'image/webp' ? 'webp' : 'jpg';
+      const fileName = `img_${Date.now()}.${ext}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('item-images')
-        .upload(fileName, safeFile, { contentType: safeFile.type || 'image/jpeg', upsert: false });
+        .upload(fileName, safeFile, { contentType: safeFile.type || 'image/jpeg', upsert: true });
       if (uploadError) {
-        console.error('Image upload error:', uploadError);
-      }
-      if (uploadData) {
+        console.error('Image upload error:', JSON.stringify(uploadError));
+      } else if (uploadData) {
         const { data: url } = supabase.storage.from('item-images').getPublicUrl(uploadData.path);
         image_url = url.publicUrl;
+        console.log('Image uploaded successfully:', image_url);
       }
     }
     const { data, error } = await supabase
