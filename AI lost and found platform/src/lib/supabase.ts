@@ -25,9 +25,14 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       // Identify requests for better Supabase dashboard analytics.
       'x-client-info': 'finback-ai/1.0',
     },
-    // Fetch with keepalive so in-flight auth requests survive page transitions.
-    fetch: (url, options = {}) =>
-      fetch(url, { ...options, keepalive: true }),
+    // Only use keepalive for non-upload requests (keepalive has 64KB limit)
+    fetch: (url, options = {}) => {
+      const isUpload = options.method === 'POST' && options.body instanceof Blob ||
+                       options.body instanceof File ||
+                       options.body instanceof FormData ||
+                       (options.body && (options.body as any).size > 60000);
+      return fetch(url, { ...options, keepalive: isUpload ? false : true });
+    },
   },
   realtime: {
     // Increase heartbeat interval to reduce wasted connections when the tab
