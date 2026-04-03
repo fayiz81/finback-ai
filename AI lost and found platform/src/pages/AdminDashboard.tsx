@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { ROUTE_PATHS, calculateMatchScore, getDistanceInKm, getDaysDifference, normalizeScore } from '@/lib/index';
+import { ROUTE_PATHS, buildEnhancedMatches, getDistanceInKm } from '@/lib/index';
 import {
   Users, Package, Shield, RefreshCw, Trash2, UserCheck, Mail,
   Search, LogOut, ChevronRight, AlertTriangle, CheckCircle2,
@@ -27,26 +27,6 @@ interface Item {
   approved?: boolean;
 }
 type Tab = 'overview' | 'analytics' | 'matches' | 'items' | 'users' | 'notifications';
-
-// ── Build AI matches ──────────────────────────────────────────────────────────
-function buildMatches(lostItems: Item[], foundItems: Item[]) {
-  const results: any[] = [];
-  for (const lost of lostItems) {
-    for (const found of foundItems) {
-      const sameCategory = lost.category === found.category ? 0.8 : 0.2;
-      const lostWords = (lost.title + ' ' + lost.description).toLowerCase().split(/\s+/);
-      const foundWords = (found.title + ' ' + found.description).toLowerCase().split(/\s+/);
-      const shared = lostWords.filter((w: string) => w.length > 3 && foundWords.includes(w)).length;
-      const textSim = Math.min(1, sameCategory * 0.5 + (shared / Math.max(lostWords.length, 1)) * 0.5);
-      const locationProx = normalizeScore(getDistanceInKm(lost.location_lat||0, lost.location_lng||0, found.location_lat||0, found.location_lng||0), 10);
-      const timeProx = normalizeScore(getDaysDifference(new Date(lost.date_lost||lost.created_at), new Date(found.date_found||found.created_at)), 30);
-      const imageSim = sameCategory === 0.8 ? 0.65 : 0.3;
-      const score = calculateMatchScore(imageSim, textSim, locationProx, timeProx);
-      if (score >= 0.3) results.push({ id: `${lost.id}-${found.id}`, lost, found, score, imageSim, textSim, locationProx, timeProx, adminStatus: 'pending' });
-    }
-  }
-  return results.sort((a, b) => b.score - a.score);
-}
 
 // ── Mini bar chart ────────────────────────────────────────────────────────────
 function MiniBar({ value, max, color = 'bg-primary' }: { value: number; max: number; color?: string }) {
@@ -171,7 +151,7 @@ export default function AdminDashboard() {
 
   const lostItems = items.filter(i => i.type === 'lost');
   const foundItems = items.filter(i => i.type === 'found');
-  const allMatches = useMemo(() => buildMatches(lostItems, foundItems), [lostItems, foundItems]);
+  const allMatches = useMemo(() => buildEnhancedMatches(lostItems, foundItems, 0.25), [lostItems, foundItems]);
 
   // Analytics: last 14 days
   const analyticsData = useMemo(() => {
@@ -384,7 +364,7 @@ export default function AdminDashboard() {
     unconfirmed: users.filter(u => !u.email_confirmed_at).length,
     totalItems: items.length, lostItems: lostItems.length, foundItems: foundItems.length,
     totalMatches: allMatches.length,
-    highConfidence: allMatches.filter(m => m.score > 0.7).length,
+    highConfidence: allMatches.filter(m => m.confidenceScore > 0.7).length,
   };
 
   const today = new Date().toDateString();
@@ -652,8 +632,8 @@ export default function AdminDashboard() {
                   </div>
                 ) : allMatches.map((match, i) => {
                   const status = matchStatuses[match.id] || 'pending';
-                  const pct = Math.round(match.score * 100);
-                  const isHigh = match.score > 0.7;
+                  const pct = Math.round(match.confidenceScore * 100);
+                  const isHigh = match.confidenceScore > 0.7;
                   return (
                     <motion.div key={match.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
                       className={`rounded-2xl border p-5 transition-all ${
