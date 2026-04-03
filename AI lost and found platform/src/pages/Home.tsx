@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
 import { useRef, useMemo } from 'react';
 import { Brain, Zap, Shield, TrendingUp, Users, MapPin, Clock, CheckCircle, ArrowRight, Sparkles } from 'lucide-react';
-import { ROUTE_PATHS, calculateMatchScore, getDistanceInKm, getDaysDifference, normalizeScore } from '@/lib/index';
+import { ROUTE_PATHS, buildEnhancedMatches, getDistanceInKm, getDaysDifference, normalizeScore, calculateMatchScore } from '@/lib/index';
 import { useItems } from '@/hooks/useItems';
 
 function FadeUp({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
@@ -17,22 +17,7 @@ function FadeUp({ children, delay = 0, className = '' }: { children: React.React
 }
 
 function buildTopMatches(lostItems: any[], foundItems: any[]) {
-  const results: any[] = [];
-  for (const lost of lostItems) {
-    for (const found of foundItems) {
-      const sameCategory = lost.category === found.category ? 0.8 : 0.2;
-      const lostWords = (lost.title + ' ' + lost.description).toLowerCase().split(/\s+/);
-      const foundWords = (found.title + ' ' + found.description).toLowerCase().split(/\s+/);
-      const shared = lostWords.filter((w: string) => w.length > 3 && foundWords.includes(w)).length;
-      const textSim = Math.min(1, sameCategory * 0.5 + (shared / Math.max(lostWords.length, 1)) * 0.5);
-      const locationProx = normalizeScore(getDistanceInKm(lost.location_lat||0,lost.location_lng||0,found.location_lat||0,found.location_lng||0), 10);
-      const timeProx = normalizeScore(getDaysDifference(new Date(lost.date_lost||lost.created_at), new Date(found.date_found||found.created_at)), 30);
-      const imageSim = sameCategory === 0.8 ? 0.65 : 0.3;
-      const score = calculateMatchScore(imageSim, textSim, locationProx, timeProx);
-      if (score >= 0.3) results.push({ lost, found, score });
-    }
-  }
-  return results.sort((a, b) => b.score - a.score).slice(0, 3);
+  return buildEnhancedMatches(lostItems, foundItems, 0.25).slice(0, 3);
 }
 
 const glass = {
@@ -58,9 +43,9 @@ function DashboardMockup() {
 
   const topMatches = useMemo(() => buildTopMatches(lostItems, foundItems), [lostItems, foundItems]);
   const displayMatches = topMatches.length > 0
-    ? topMatches.map(m => ({ emoji:'📦', title:m.lost.title, loc:m.found.location_name||'Unknown', pct:Math.round(m.score*100), high:m.score>0.7 }))
+    ? topMatches.map(m => ({ emoji:'📦', title:m.lost.title, loc:m.found.location_name||'Unknown', pct:Math.round(m.confidenceScore*100), high:m.confidenceScore>0.7 }))
     : [{ emoji:'👜', title:'Black Wallet', loc:'Main Library', pct:94, high:true }, { emoji:'💻', title:'MacBook Pro 14"', loc:'Engineering Bldg', pct:89, high:true }, { emoji:'🎧', title:'AirPods Pro', loc:'Gym Locker', pct:76, high:false }];
-  const accuracy = foundItems.length > 0 ? Math.round((topMatches.filter(m=>m.score>0.7).length / Math.max(foundItems.length,1)) * 100) : 94;
+  const accuracy = foundItems.length > 0 ? Math.round((topMatches.filter(m=>m.confidenceScore>0.7).length / Math.max(foundItems.length,1)) * 100) : 94;
 
   return (
     <motion.div initial={{ opacity:0, y:32, scale:0.95 }} animate={{ opacity:1, y:0, scale:1 }} transition={{ delay:0.3, duration:0.8, ease:[0.22,1,0.36,1] }}
@@ -173,7 +158,7 @@ export default function Home() {
   const topMatches = useMemo(() => buildTopMatches(lostItems, foundItems), [lostItems, foundItems]);
 
   const heroStats = [
-    { num: loading?'—':`${topMatches.length>0 ? Math.round((topMatches.filter(m=>m.score>0.7).length/Math.max(foundItems.length,1))*100) : 94}%`, label:'Match accuracy' },
+    { num: loading?'—':`${topMatches.length>0 ? Math.round((topMatches.filter(m=>m.confidenceScore>0.7).length/Math.max(foundItems.length,1))*100) : 94}%`, label:'Match accuracy' },
     { num: loading?'—':String(items.length), label:'Total items' },
     { num: loading?'—':String(lostItems.length+foundItems.length>0 ? topMatches.length : 0), label:'AI matches made' },
   ];
