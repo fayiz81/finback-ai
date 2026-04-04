@@ -645,12 +645,12 @@ export default function AdminDashboard() {
                         {/* Lost item */}
                         <div className="flex-1 flex gap-3 items-start">
                           <div className="w-12 h-12 rounded-xl bg-white/5 overflow-hidden flex-shrink-0 cursor-pointer" onClick={() => setSelectedItem(match.lost)}>
-                            {match.lost.image_url ? <img src={match.lost.image_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Image size={14} className="text-white/20" /></div>}
+                            {match.lostItem.image_url ? <img src={match.lostItem.image_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Image size={14} className="text-white/20" /></div>}
                           </div>
                           <div className="flex-1 min-w-0">
                             <span className="text-[10px] text-red-400 uppercase tracking-widest">Lost</span>
-                            <p className="font-semibold text-sm truncate">{match.lost.title}</p>
-                            <p className="text-xs text-white/30 flex items-center gap-1"><MapPin size={9} />{match.lost.location_name || '—'}</p>
+                            <p className="font-semibold text-sm truncate">{match.lostItem.title}</p>
+                            <p className="text-xs text-white/30 flex items-center gap-1"><MapPin size={9} />{match.lostItem.location_name || '—'}</p>
                           </div>
                         </div>
 
@@ -670,12 +670,12 @@ export default function AdminDashboard() {
                         {/* Found item */}
                         <div className="flex-1 flex gap-3 items-start">
                           <div className="w-12 h-12 rounded-xl bg-white/5 overflow-hidden flex-shrink-0 cursor-pointer" onClick={() => setSelectedItem(match.found)}>
-                            {match.found.image_url ? <img src={match.found.image_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Image size={14} className="text-white/20" /></div>}
+                            {match.foundItem.image_url ? <img src={match.foundItem.image_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Image size={14} className="text-white/20" /></div>}
                           </div>
                           <div className="flex-1 min-w-0">
                             <span className="text-[10px] text-emerald-400 uppercase tracking-widest">Found</span>
-                            <p className="font-semibold text-sm truncate">{match.found.title}</p>
-                            <p className="text-xs text-white/30 flex items-center gap-1"><MapPin size={9} />{match.found.location_name || '—'}</p>
+                            <p className="font-semibold text-sm truncate">{match.foundItem.title}</p>
+                            <p className="text-xs text-white/30 flex items-center gap-1"><MapPin size={9} />{match.foundItem.location_name || '—'}</p>
                           </div>
                         </div>
 
