@@ -17,6 +17,7 @@ function FadeUp({ children, delay = 0, className = '' }: { children: React.React
 }
 
 function buildTopMatches(lostItems: any[], foundItems: any[]) {
+  if (!lostItems?.length || !foundItems?.length) return [];
   return buildEnhancedMatches(lostItems, foundItems, 0.25).slice(0, 3);
 }
 
