@@ -44,7 +44,7 @@ function DashboardMockup() {
 
   const topMatches = useMemo(() => buildTopMatches(lostItems, foundItems), [lostItems, foundItems]);
   const displayMatches = topMatches.length > 0
-    ? topMatches.map(m => ({ emoji:'📦', title:m.lost.title, loc:m.found.location_name||'Unknown', pct:Math.round(m.confidenceScore*100), high:m.confidenceScore>0.7 }))
+    ? topMatches.map(m => ({ emoji:'📦', title:m.lostItem.title, loc:m.foundItem.location_name||'Unknown', pct:Math.round(m.confidenceScore*100), high:m.confidenceScore>0.7 }))
     : [{ emoji:'👜', title:'Black Wallet', loc:'Main Library', pct:94, high:true }, { emoji:'💻', title:'MacBook Pro 14"', loc:'Engineering Bldg', pct:89, high:true }, { emoji:'🎧', title:'AirPods Pro', loc:'Gym Locker', pct:76, high:false }];
   const accuracy = foundItems.length > 0 ? Math.round((topMatches.filter(m=>m.confidenceScore>0.7).length / Math.max(foundItems.length,1)) * 100) : 94;
 
