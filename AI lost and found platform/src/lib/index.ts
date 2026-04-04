@@ -281,3 +281,122 @@ export const calculateMatchScore = (
   const score = imageSim*0.4 + textSim*0.3 + locationProx*0.2 + timeProx*0.1;
   return Math.round(score * 100) / 100;
 };
+
+// ─── Enhanced Match Types ─────────────────────────────────────────────────────
+export interface EnhancedBreakdown {
+  imageSimilarity: number;
+  textSimilarity: number;
+  locationProximity: number;
+  timeProximity: number;
+  colorMatch: number;
+  brandMatch: number;
+  physicalDescMatch: number;
+  categorySimilarity: number;
+  confidence: 'high' | 'medium' | 'low';
+  signals: string[];
+}
+
+export interface EnhancedMatch {
+  id: string;
+  lostItem: any;
+  foundItem: any;
+  confidenceScore: number;
+  breakdown: EnhancedBreakdown;
+  status: 'pending' | 'confirmed' | 'dismissed';
+  createdAt: Date;
+}
+
+// ─── Main matching function ───────────────────────────────────────────────────
+export function buildEnhancedMatches(
+  lostItems: any[],
+  foundItems: any[],
+  minScore = 0.25
+): EnhancedMatch[] {
+  const results: EnhancedMatch[] = [];
+
+  const allDocs = [
+    ...lostItems.map(i => extractTokens(i.title + ' ' + (i.description || ''))),
+    ...foundItems.map(i => extractTokens(i.title + ' ' + (i.description || ''))),
+  ];
+
+  for (const lost of lostItems) {
+    for (const found of foundItems) {
+      const lostText  = (lost.title  + ' ' + (lost.description  || '')).toLowerCase();
+      const foundText = (found.title + ' ' + (found.description || '')).toLowerCase();
+
+      const catSim      = categorySimilarity(lost.category || '', found.category || '');
+      const colorSim    = colorSimilarity(lostText, foundText);
+      const brandSim    = brandSimilarity(lostText, foundText);
+      const textSim     = advancedTextSimilarity(lostText, foundText, allDocs);
+      const physSim     = physicalDescSimilarity(lostText, foundText);
+      const imageSim    = estimatedImageSimilarity(lostText, foundText, catSim, colorSim, brandSim, physSim);
+
+      const distKm = getDistanceInKm(
+        lost.location_lat || 0, lost.location_lng || 0,
+        found.location_lat || 0, found.location_lng || 0
+      );
+      const locationScore = adaptiveLocationScore(distKm, lost.category || '');
+
+      const lostDate  = new Date(lost.date_lost  || lost.created_at);
+      const foundDate = new Date(found.date_found || found.created_at);
+      const timeScore = adaptiveTimeScore(lostDate, foundDate);
+
+      const score =
+        textSim       * WEIGHTS.text     +
+        catSim        * WEIGHTS.category +
+        brandSim      * WEIGHTS.brand    +
+        imageSim      * WEIGHTS.image    +
+        colorSim      * WEIGHTS.color    +
+        locationScore * WEIGHTS.location +
+        timeScore     * WEIGHTS.time;
+
+      const catPenalty = catSim < 0.1 ? 0.6 : 1.0;
+      const finalScore = Math.round(Math.min(1, Math.max(0, score * catPenalty)) * 100) / 100;
+
+      if (finalScore < minScore) continue;
+
+      const signals: string[] = [];
+      if (catSim === 1.0)    signals.push('Same category');
+      else if (catSim >= 0.5) signals.push('Related category');
+      if (brandSim === 1.0)  signals.push('Same brand detected');
+      if (colorSim >= 0.8)   signals.push('Matching colors');
+      else if (colorSim <= 0.1) signals.push('Color mismatch');
+      if (textSim >= 0.55)   signals.push('Strong description match');
+      else if (textSim >= 0.3) signals.push('Partial description match');
+      if (distKm < 0.3)      signals.push('Same location');
+      else if (distKm < 1)   signals.push('Very close location');
+      else if (distKm < 5)   signals.push('Nearby location');
+      const diffDays = Math.round((foundDate.getTime() - lostDate.getTime()) / (1000*60*60*24));
+      if (diffDays >= 0 && diffDays <= 1)  signals.push('Found same day');
+      else if (diffDays >= 0 && diffDays <= 7) signals.push('Found within a week');
+      else if (diffDays >= 0 && diffDays <= 30) signals.push('Found within a month');
+      if (physSim >= 0.5)    signals.push('Physical description matches');
+
+      const confidence: 'high' | 'medium' | 'low' =
+        finalScore >= 0.7 ? 'high' : finalScore >= 0.45 ? 'medium' : 'low';
+
+      results.push({
+        id: `${lost.id}-${found.id}`,
+        lostItem: lost,
+        foundItem: found,
+        confidenceScore: finalScore,
+        breakdown: {
+          imageSimilarity:    Math.round(imageSim      * 100) / 100,
+          textSimilarity:     Math.round(textSim       * 100) / 100,
+          locationProximity:  Math.round(locationScore * 100) / 100,
+          timeProximity:      Math.round(timeScore     * 100) / 100,
+          colorMatch:         Math.round(colorSim      * 100) / 100,
+          brandMatch:         Math.round(brandSim      * 100) / 100,
+          physicalDescMatch:  Math.round(physSim       * 100) / 100,
+          categorySimilarity: Math.round(catSim        * 100) / 100,
+          confidence,
+          signals,
+        },
+        status: 'pending',
+        createdAt: new Date(),
+      });
+    }
+  }
+
+  return results.sort((a, b) => b.confidenceScore - a.confidenceScore);
+}
