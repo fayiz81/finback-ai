@@ -320,7 +320,10 @@ export function buildEnhancedMatches(
   ];
 
   for (const lost of lostItems) {
+    if (!lost || !lost.id || !lost.title) continue; // skip malformed items
     for (const found of foundItems) {
+      if (!found || !found.id || !found.title) continue; // skip malformed items
+      if (lost.id === found.id) continue; // skip same item
       const lostText  = (lost.title  + ' ' + (lost.description  || '')).toLowerCase();
       const foundText = (found.title + ' ' + (found.description || '')).toLowerCase();
 
