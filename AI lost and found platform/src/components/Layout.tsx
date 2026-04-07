@@ -61,7 +61,7 @@ export function Layout({ children }: LayoutProps) {
   ];
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #0f0c29 0%, #1a0533 35%, #0d1f3c 70%, #0a2a1a 100%)' }}>
+    <div style={{ minHeight:'100vh', background:'linear-gradient(135deg, #0f0c29 0%, #1a0533 35%, #0d1f3c 70%, #0a2a1a 100%)', backgroundAttachment:'fixed' }}>
       {/* Global ambient blobs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div style={{ position:'absolute', width:600, height:600, borderRadius:'50%', background:'radial-gradient(circle, rgba(109,40,217,0.2) 0%, transparent 70%)', top:-200, left:-100 }} />
