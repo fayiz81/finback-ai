@@ -138,13 +138,13 @@ function DashboardMockup() {
 
       {/* Floating chips */}
       <motion.div initial={{ opacity:0, x:-20 }} animate={{ opacity:1, x:0 }} transition={{ delay:1.5 }}
-        style={{ position:'absolute', left:-120, top:60, ...glass, padding:'10px 14px', display:'none' }} className="lg:block">
+        style={{ position:'absolute', left:-120, top:60, ...glass, padding:'10px 14px' }}>
         <p style={{ fontSize:9, color:'rgba(255,255,255,0.35)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:3 }}>Items lost</p>
         <p style={{ fontSize:15, fontWeight:700, color:'#fff', margin:0 }}>{loading?'—':lostItems.length} items</p>
         <p style={{ fontSize:10, color:'rgba(255,255,255,0.35)', marginTop:1 }}>reported</p>
       </motion.div>
       <motion.div initial={{ opacity:0, x:-20 }} animate={{ opacity:1, x:0 }} transition={{ delay:1.8 }}
-        style={{ position:'absolute', left:-100, bottom:80, ...glass, padding:'10px 14px', display:'none' }} className="lg:block">
+        style={{ position:'absolute', left:-100, bottom:80, ...glass, padding:'10px 14px' }}>
         <p style={{ fontSize:9, color:'rgba(255,255,255,0.35)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:3 }}>Items found</p>
         <p style={{ fontSize:15, fontWeight:700, color:'#fff', margin:0 }}>{loading?'—':foundItems.length} items</p>
         <p style={{ fontSize:10, color:'#34d399', marginTop:1 }}>submitted by finders</p>
@@ -203,7 +203,7 @@ export default function Home() {
       {/* ── HERO ── */}
       <section style={{ minHeight:'100vh', display:'flex', alignItems:'center', padding:'80px 16px 64px', position:'relative', overflow:'hidden' }}>
         <div style={{ maxWidth:1200, margin:'0 auto', width:'100%' }}>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr', gap:40, alignItems:'center' }} className="lg:grid-cols-2">
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(min(100%, 480px), 1fr))', gap:48, alignItems:'center' }}>
             <div>
               <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }}
                 style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'6px 14px', borderRadius:20, background:'rgba(124,58,237,0.1)', border:'1px solid rgba(124,58,237,0.2)', marginBottom:28 }}>
@@ -257,7 +257,7 @@ export default function Home() {
       {/* ── STATS STRIP ── */}
       <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)', borderBottom:'1px solid rgba(255,255,255,0.06)', background:'rgba(0,0,0,0.2)', backdropFilter:'blur(20px)', padding:'48px 16px' }}>
         <div style={{ maxWidth:1200, margin:'0 auto' }}>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:1, background:'rgba(255,255,255,0.06)' }}>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:1, background:'rgba(255,255,255,0.06)' }}>
             {pageStats.map((stat,i) => {
               const Icon = stat.icon;
               return (
@@ -288,7 +288,7 @@ export default function Home() {
               Advanced technology meets intuitive design to reunite you with your belongings.
             </p>
           </FadeUp>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:16 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap:16 }}>
             {features.map((f,i) => {
               const Icon = f.icon;
               return (
@@ -321,7 +321,7 @@ export default function Home() {
               <span style={{ background:'linear-gradient(135deg,#a78bfa,#60a5fa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>in four steps</span>
             </h2>
           </FadeUp>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))', gap:14 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap:14 }}>
             {howItWorks.map((item,i) => (
               <FadeUp key={i} delay={i*0.1}>
                 <div style={{ ...glass, padding:24, height:'100%', transition:'all 0.3s' }}
@@ -351,7 +351,7 @@ export default function Home() {
               <p style={{ fontSize:16, color:'rgba(255,255,255,0.45)', marginBottom:36, maxWidth:480, margin:'0 auto 36px', lineHeight:1.6 }}>
                 Join thousands of students already using FinBack AI to recover their belongings.
               </p>
-              <div style={{ display:'flex', flexDirection:'column', gap:12, alignItems:'center' }} className="sm:flex-row sm:justify-center">
+              <div style={{ display:'flex', flexWrap:'wrap', gap:12, alignItems:'center', justifyContent:'center' }}>
                 <Link to={ROUTE_PATHS.AUTH} style={{ ...btnPrimary, padding:'14px 32px' }}>
                   Create Free Account <ArrowRight style={{ width:16, height:16 }} />
                 </Link>
