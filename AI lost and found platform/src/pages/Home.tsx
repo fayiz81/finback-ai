@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
 import { useRef, useMemo } from 'react';
-import { Brain, Zap, Shield, TrendingUp, Users, MapPin, Clock, CheckCircle, ArrowRight, Sparkles } from 'lucide-react';
+import { Brain, Zap, Shield, TrendingUp, Users, MapPin, Clock, CheckCircle, ArrowRight, Sparkles, LogOut, LayoutDashboard } from 'lucide-react';
 import { ROUTE_PATHS, buildEnhancedMatches, getDistanceInKm, getDaysDifference, normalizeScore, calculateMatchScore } from '@/lib/index';
 import { useItems } from '@/hooks/useItems';
+import { useAuth } from '@/hooks/useAuth';
 
 function FadeUp({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
   const ref = useRef(null);
@@ -155,6 +156,8 @@ function DashboardMockup() {
 
 export default function Home() {
   const { items, lostItems, foundItems, loading } = useItems();
+  const { user, isAuthenticated, signOut } = useAuth();
+  const displayName = user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'there';
   const todayCount = items.filter(i => new Date(i.created_at).toDateString() === new Date().toDateString()).length;
   const topMatches = useMemo(() => buildTopMatches(lostItems, foundItems), [lostItems, foundItems]);
 
@@ -211,7 +214,9 @@ export default function Home() {
                   <span style={{ position:'absolute', display:'inline-flex', width:'100%', height:'100%', borderRadius:'50%', background:'#34d399', opacity:0.75, animation:'ping 1.5s cubic-bezier(0,0,0.2,1) infinite' }} />
                   <span style={{ position:'relative', display:'inline-flex', width:8, height:8, borderRadius:'50%', background:'#34d399' }} />
                 </span>
-                <span style={{ fontSize:12, color:'#a78bfa', fontWeight:500 }}>AI-Powered Lost & Found — Campus Edition</span>
+                <span style={{ fontSize:12, color:'#a78bfa', fontWeight:500 }}>
+                  {isAuthenticated ? `Welcome back, ${displayName} 👋` : 'AI-Powered Lost & Found — Campus Edition'}
+                </span>
               </motion.div>
 
               <motion.h1 initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.1, duration:0.65, ease:[0.22,1,0.36,1] }}
@@ -229,10 +234,24 @@ export default function Home() {
 
               <motion.div initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.3 }}
                 style={{ display:'flex', flexWrap:'wrap', gap:12, marginBottom:44 }}>
-                <Link to={ROUTE_PATHS.AUTH} style={btnPrimary}>
-                  Get Started Free <ArrowRight style={{ width:16, height:16 }} />
-                </Link>
-                <Link to={ROUTE_PATHS.BROWSE} style={btnOutline}>Browse Items</Link>
+                {isAuthenticated ? (
+                  <>
+                    <Link to={ROUTE_PATHS.DASHBOARD} style={btnPrimary}>
+                      <LayoutDashboard style={{ width:16, height:16 }} /> Go to Dashboard
+                    </Link>
+                    <Link to={ROUTE_PATHS.BROWSE} style={btnOutline}>Browse Items</Link>
+                    <button onClick={() => signOut()} style={{ ...btnOutline, display:'inline-flex', alignItems:'center', gap:8, color:'rgba(255,255,255,0.5)', border:'1px solid rgba(255,255,255,0.08)' }}>
+                      <LogOut style={{ width:15, height:15 }} /> Sign Out
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link to={ROUTE_PATHS.AUTH} style={btnPrimary}>
+                      Get Started Free <ArrowRight style={{ width:16, height:16 }} />
+                    </Link>
+                    <Link to={ROUTE_PATHS.BROWSE} style={btnOutline}>Browse Items</Link>
+                  </>
+                )}
               </motion.div>
 
               {/* Hero stats */}
@@ -352,10 +371,21 @@ export default function Home() {
                 Join thousands of students already using FinBack AI to recover their belongings.
               </p>
               <div style={{ display:'flex', flexWrap:'wrap', gap:12, alignItems:'center', justifyContent:'center' }}>
-                <Link to={ROUTE_PATHS.AUTH} style={{ ...btnPrimary, padding:'14px 32px' }}>
-                  Create Free Account <ArrowRight style={{ width:16, height:16 }} />
-                </Link>
-                <Link to={ROUTE_PATHS.SUBMIT} style={{ ...btnOutline, padding:'14px 32px' }}>Report an Item</Link>
+                {isAuthenticated ? (
+                  <>
+                    <Link to={ROUTE_PATHS.SUBMIT} style={{ ...btnPrimary, padding:'14px 32px' }}>
+                      Submit an Item <ArrowRight style={{ width:16, height:16 }} />
+                    </Link>
+                    <Link to={ROUTE_PATHS.MATCHES} style={{ ...btnOutline, padding:'14px 32px' }}>View AI Matches</Link>
+                  </>
+                ) : (
+                  <>
+                    <Link to={ROUTE_PATHS.AUTH} style={{ ...btnPrimary, padding:'14px 32px' }}>
+                      Create Free Account <ArrowRight style={{ width:16, height:16 }} />
+                    </Link>
+                    <Link to={ROUTE_PATHS.SUBMIT} style={{ ...btnOutline, padding:'14px 32px' }}>Report an Item</Link>
+                  </>
+                )}
               </div>
               <p style={{ marginTop:20, fontSize:12, color:'rgba(255,255,255,0.25)' }}>No credit card required · Free campus plan · Cancel anytime</p>
             </div>
