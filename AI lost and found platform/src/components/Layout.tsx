@@ -14,7 +14,11 @@ interface LayoutProps { children: React.ReactNode; }
 
 export function Layout({ children }: LayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    // Persist preference in localStorage; default to dark
+    const saved = localStorage.getItem('finback-theme');
+    return saved ? saved === 'dark' : true;
+  });
   const [scrolled, setScrolled] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(0);
   const headerRef = useRef<HTMLElement>(null);
@@ -47,6 +51,7 @@ export function Layout({ children }: LayoutProps) {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDarkMode);
+    localStorage.setItem('finback-theme', isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
 
   useEffect(() => { setMobileMenuOpen(false); }, [location.pathname]);
@@ -61,20 +66,24 @@ export function Layout({ children }: LayoutProps) {
   ];
 
   return (
-    <div style={{ minHeight:'100vh', background:'linear-gradient(135deg, #0f0c29 0%, #1a0533 35%, #0d1f3c 70%, #0a2a1a 100%)', backgroundAttachment:'fixed' }}>
-      {/* Global ambient blobs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div style={{ position:'absolute', width:600, height:600, borderRadius:'50%', background:'radial-gradient(circle, rgba(109,40,217,0.2) 0%, transparent 70%)', top:-200, left:-100 }} />
-        <div style={{ position:'absolute', width:500, height:500, borderRadius:'50%', background:'radial-gradient(circle, rgba(5,150,105,0.15) 0%, transparent 70%)', bottom:-100, right:-100 }} />
-        <div style={{ position:'absolute', width:400, height:400, borderRadius:'50%', background:'radial-gradient(circle, rgba(37,99,235,0.12) 0%, transparent 70%)', top:'50%', left:'50%', transform:'translate(-50%,-50%)' }} />
-      </div>
+    <div className={isDarkMode ? 'finback-dark' : 'finback-light'} style={{ minHeight:'100vh' }}>
+      {/* Global ambient blobs — dark mode only */}
+      {isDarkMode && (
+        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+          <div style={{ position:'absolute', width:600, height:600, borderRadius:'50%', background:'radial-gradient(circle, rgba(109,40,217,0.2) 0%, transparent 70%)', top:-200, left:-100 }} />
+          <div style={{ position:'absolute', width:500, height:500, borderRadius:'50%', background:'radial-gradient(circle, rgba(5,150,105,0.15) 0%, transparent 70%)', bottom:-100, right:-100 }} />
+          <div style={{ position:'absolute', width:400, height:400, borderRadius:'50%', background:'radial-gradient(circle, rgba(37,99,235,0.12) 0%, transparent 70%)', top:'50%', left:'50%', transform:'translate(-50%,-50%)' }} />
+        </div>
+      )}
 
       {/* Header */}
       <header ref={headerRef} style={{
         position:'fixed', top:0, left:0, right:0, zIndex:50,
-        background: scrolled ? 'rgba(15,12,41,0.8)' : 'rgba(15,12,41,0.4)',
+        background: scrolled
+          ? (isDarkMode ? 'rgba(15,12,41,0.88)' : 'rgba(255,255,255,0.88)')
+          : (isDarkMode ? 'rgba(15,12,41,0.5)' : 'rgba(255,255,255,0.5)'),
         backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)',
-        borderBottom:'1px solid rgba(255,255,255,0.08)',
+        borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)',
         transition:'background 0.3s',
       }}>
         <div className="w-full px-4 sm:px-6 lg:px-8">
@@ -207,7 +216,11 @@ export function Layout({ children }: LayoutProps) {
       </main>
 
       {/* Footer */}
-      <footer style={{ borderTop:'1px solid rgba(255,255,255,0.06)', background:'rgba(0,0,0,0.2)', backdropFilter:'blur(20px)', position:'relative', zIndex:1 }}>
+      <footer style={{
+        borderTop: isDarkMode ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.08)',
+        background: isDarkMode ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.6)',
+        backdropFilter:'blur(20px)', position:'relative', zIndex:1
+      }}>
         <div className="container mx-auto px-4 py-12">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="space-y-4">
