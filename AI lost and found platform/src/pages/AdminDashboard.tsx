@@ -408,8 +408,8 @@ export default function AdminDashboard() {
       <motion.aside animate={{ width: sidebarOpen ? 220 : 64 }} transition={{ duration: 0.2, ease: 'easeInOut' }}
         className="relative flex-shrink-0 flex flex-col bg-[#0e0e18] border-r border-white/5 overflow-hidden">
         <div className="flex items-center gap-3 px-4 h-16 border-b border-white/5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
-            <Shield size={14} />
+          <div style={{ width:32, height:32, borderRadius:8, overflow:'hidden', flexShrink:0 }}>
+            <img src="/logo.png" alt="FinBack AI" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
           </div>
           {sidebarOpen && <span className="font-bold text-sm whitespace-nowrap">FinBack Admin</span>}
         </div>

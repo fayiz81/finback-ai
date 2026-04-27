@@ -83,8 +83,8 @@ export function Layout({ children }: LayoutProps) {
             <div className="flex items-center gap-8">
               <NavLink to={ROUTE_PATHS.HOME} className="flex items-center gap-2.5">
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                  style={{ width:38, height:38, borderRadius:12, background:'linear-gradient(135deg,#7c3aed,#4f46e5)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 20px rgba(124,58,237,0.4)' }}>
-                  <Zap className="h-5 w-5 text-white" />
+                  style={{ width:38, height:38, borderRadius:12, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 20px rgba(124,58,237,0.4)' }}>
+                  <img src="/logo.png" alt="FinBack AI" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                 </motion.div>
                 <span style={{ fontSize:18, fontWeight:700, background:'linear-gradient(135deg,#a78bfa,#60a5fa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>
                   FinBack AI
@@ -212,8 +212,8 @@ export function Layout({ children }: LayoutProps) {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <div style={{ width:32, height:32, borderRadius:8, background:'linear-gradient(135deg,#7c3aed,#4f46e5)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                  <Zap className="h-4 w-4 text-white" />
+                <div style={{ width:32, height:32, borderRadius:8, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 12px rgba(124,58,237,0.3)' }}>
+                  <img src="/logo.png" alt="FinBack AI" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                 </div>
                 <span style={{ fontSize:16, fontWeight:700, color:'#fff' }}>FinBack AI</span>
               </div>
