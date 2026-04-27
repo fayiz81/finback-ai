@@ -111,7 +111,7 @@ function DashboardMockup() {
               </span>
               <span style={{ fontSize:10, color:'#34d399', display:'flex', alignItems:'center', gap:4 }}>
                 <span style={{ width:6, height:6, borderRadius:'50%', background:'#34d399', display:'inline-block', animation:'pulse 2s infinite' }} />
-                {topMatches.length > 0 ? 'Live' : 'Demo'}
+                {topMatches.length > 0 ? 'ChatGPT Live' : 'Awaiting Items'}
               </span>
             </div>
             {displayMatches.map((m,i) => (
@@ -229,7 +229,7 @@ export default function Home() {
 
               <motion.p initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.2 }}
                 style={{ fontSize:17, color:'rgba(255,255,255,0.5)', lineHeight:1.7, marginBottom:36, maxWidth:480 }}>
-                FinBack AI uses advanced neural networks to match lost and found items across your campus. Smart, fast, and built for college students.
+                FinBack AI uses <strong style={{ color:'rgba(255,255,255,0.75)' }}>ChatGPT (GPT-4o)</strong> to semantically match lost and found items across your campus — understanding context, descriptions, and location like a human would.
               </motion.p>
 
               <motion.div initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.3 }}
@@ -254,6 +254,19 @@ export default function Home() {
                 )}
               </motion.div>
 
+              {/* ChatGPT powered badge */}
+              <motion.div initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.38 }}
+                style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap', marginBottom:32 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:7, padding:'6px 14px', borderRadius:20, background:'rgba(16,163,127,0.1)', border:'1px solid rgba(16,163,127,0.25)' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink:0 }}>
+                    <path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073zM13.26 22.43a4.476 4.476 0 0 1-2.876-1.04l.141-.081 4.779-2.758a.795.795 0 0 0 .392-.681v-6.737l2.02 1.168a.071.071 0 0 1 .038.052v5.583a4.504 4.504 0 0 1-4.494 4.494zM3.6 18.304a4.47 4.47 0 0 1-.535-3.014l.142.085 4.783 2.759a.771.771 0 0 0 .78 0l5.843-3.369v2.332a.08.08 0 0 1-.033.062L9.74 19.95a4.5 4.5 0 0 1-6.14-1.646zM2.34 7.896a4.475 4.475 0 0 1 2.366-1.973V11.6a.766.766 0 0 0 .388.676l5.815 3.355-2.02 1.168a.076.076 0 0 1-.071 0l-4.83-2.786A4.504 4.504 0 0 1 2.34 7.872zm16.597 3.855l-5.833-3.387L15.119 7.2a.076.076 0 0 1 .071 0l4.83 2.791a4.494 4.494 0 0 1-.676 8.105v-5.678a.79.79 0 0 0-.407-.667zm2.01-3.023l-.141-.085-4.774-2.782a.776.776 0 0 0-.785 0L9.409 9.23V6.897a.066.066 0 0 1 .028-.061l4.83-2.787a4.5 4.5 0 0 1 6.68 4.66zm-12.64 4.135l-2.02-1.164a.08.08 0 0 1-.038-.057V6.075a4.5 4.5 0 0 1 7.375-3.453l-.142.08L8.704 5.46a.795.795 0 0 0-.393.681zm1.097-2.365l2.602-1.5 2.607 1.5v2.999l-2.597 1.5-2.607-1.5z" fill="#10a37f"/>
+                  </svg>
+                  <span style={{ fontSize:12, color:'#10a37f', fontWeight:600 }}>Powered by ChatGPT</span>
+                </div>
+                <div style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 12px', borderRadius:20, background:'rgba(124,58,237,0.08)', border:'1px solid rgba(124,58,237,0.2)' }}>
+                  <span style={{ fontSize:11, color:'#a78bfa', fontWeight:500 }}>GPT-4o · Semantic AI Matching</span>
+                </div>
+              </motion.div>
               {/* Hero stats */}
               <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.45 }}
                 style={{ display:'flex', alignItems:'center', gap:24, paddingTop:28, borderTop:'1px solid rgba(255,255,255,0.08)' }}>
