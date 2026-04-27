@@ -10,7 +10,7 @@ import {
   Users, Package, Shield, RefreshCw, Trash2, UserCheck, Mail,
   Search, LogOut, ChevronRight, AlertTriangle, CheckCircle2,
   MapPin, Image, BarChart2, TrendingUp, Sparkles, Eye, X,
-  CheckCircle, XCircle, Clock, Send, Download,
+  CheckCircle, XCircle, Clock, Send, Download, Home,
 } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -405,40 +405,64 @@ export default function AdminDashboard() {
       {selectedItem && <ItemModal item={selectedItem} onClose={() => setSelectedItem(null)} />}
 
       {/* Sidebar */}
-      <motion.aside animate={{ width: sidebarOpen ? 220 : 64 }} transition={{ duration: 0.2, ease: 'easeInOut' }}
+      <motion.aside animate={{ width: sidebarOpen ? 240 : 68 }} transition={{ duration: 0.2, ease: 'easeInOut' }}
         className="relative flex-shrink-0 flex flex-col bg-[#0e0e18] border-r border-white/5 overflow-hidden">
-        <div className="flex items-center gap-3 px-4 h-16 border-b border-white/5">
-          <div style={{ width:32, height:32, borderRadius:8, overflow:'hidden', flexShrink:0 }}>
+
+        {/* Sidebar brand */}
+        <div className="flex items-center gap-3 px-4 h-16 border-b border-white/5 flex-shrink-0">
+          <div style={{ width:34, height:34, borderRadius:10, overflow:'hidden', flexShrink:0 }}>
             <img src="/logo.png" alt="FinBack AI" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
           </div>
-          {sidebarOpen && <span className="font-bold text-sm whitespace-nowrap">FinBack Admin</span>}
+          {sidebarOpen && (
+            <div className="overflow-hidden">
+              <p className="font-bold text-sm whitespace-nowrap text-white">FinBack AI</p>
+              <p className="text-[10px] text-white/30 whitespace-nowrap">Admin Panel</p>
+            </div>
+          )}
         </div>
-        <nav className="flex-1 p-3 space-y-1">
+
+        {/* Nav items */}
+        <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
           {navItems.map(item => (
             <button key={item.id} onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-                activeTab === item.id ? 'bg-violet-500/15 text-violet-300' : 'text-white/40 hover:text-white/80 hover:bg-white/5'
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all group ${
+                activeTab === item.id
+                  ? 'bg-violet-500/15 text-violet-300 border border-violet-500/20'
+                  : 'text-white/40 hover:text-white/80 hover:bg-white/5 border border-transparent'
               }`}>
               <span className="flex-shrink-0">{item.icon}</span>
               {sidebarOpen && <span className="flex-1 text-left whitespace-nowrap">{item.label}</span>}
               {sidebarOpen && item.count !== undefined && (
-                <span className="text-xs bg-white/10 px-1.5 py-0.5 rounded-md">{item.count}</span>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono ${
+                  activeTab === item.id ? 'bg-violet-500/20 text-violet-300' : 'bg-white/10 text-white/40'
+                }`}>{item.count}</span>
               )}
             </button>
           ))}
         </nav>
-        <div className="p-3 border-t border-white/5 space-y-1">
+
+        {/* Bottom actions */}
+        <div className="p-3 border-t border-white/5 space-y-1 flex-shrink-0">
+          {/* Back to site */}
+          <a href="/" className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/40 hover:text-white/80 hover:bg-white/5 transition-all border border-transparent no-underline">
+            <Home size={16} className="flex-shrink-0" />
+            {sidebarOpen && <span className="whitespace-nowrap">Back to Site</span>}
+          </a>
           <button onClick={() => { fetchUsers(); fetchItems(); }}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/40 hover:text-white/80 hover:bg-white/5 transition-all">
-            <RefreshCw size={16} className="flex-shrink-0" />{sidebarOpen && <span>Refresh</span>}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/40 hover:text-white/80 hover:bg-white/5 transition-all border border-transparent">
+            <RefreshCw size={16} className="flex-shrink-0" />
+            {sidebarOpen && <span className="whitespace-nowrap">Refresh Data</span>}
           </button>
           <button onClick={() => signOut()}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-all">
-            <LogOut size={16} className="flex-shrink-0" />{sidebarOpen && <span>Sign Out</span>}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-red-400/70 hover:text-red-400 hover:bg-red-500/10 transition-all border border-transparent">
+            <LogOut size={16} className="flex-shrink-0" />
+            {sidebarOpen && <span className="whitespace-nowrap font-medium">Sign Out</span>}
           </button>
         </div>
+
+        {/* Collapse toggle */}
         <button onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="absolute top-4 -right-3 w-6 h-6 rounded-full bg-[#1a1a2e] border border-white/10 flex items-center justify-center text-white/40 hover:text-white z-10">
+          className="absolute top-5 -right-3 w-6 h-6 rounded-full bg-[#1a1a2e] border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:border-white/30 z-10 transition-all">
           <ChevronRight size={12} className={`transition-transform ${sidebarOpen ? 'rotate-180' : ''}`} />
         </button>
       </motion.aside>
@@ -447,12 +471,20 @@ export default function AdminDashboard() {
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-16 flex items-center justify-between px-6 border-b border-white/5 bg-[#09090f]/80 backdrop-blur sticky top-0 z-20">
           <div>
-            <h1 className="font-bold text-lg capitalize">{activeTab}</h1>
-            <p className="text-xs text-white/30">FinBack AI Control Panel</p>
+            <h1 className="font-bold text-base capitalize tracking-tight">{activeTab === 'overview' ? 'Dashboard Overview' : activeTab === 'matches' ? 'AI Matches' : activeTab === 'notifications' ? 'Notifications' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h1>
+            <p className="text-[11px] text-white/30">FinBack AI Control Panel</p>
           </div>
-          <div className="flex items-center gap-2 text-xs text-white/30">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
-            Live · {todayItems} items today
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 text-xs text-white/30 mr-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
+              Live · {todayItems} new today
+            </div>
+            {/* Sign out button — always visible in header */}
+            <button onClick={() => signOut()}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all">
+              <LogOut size={13} />
+              Sign Out
+            </button>
           </div>
         </header>
 
