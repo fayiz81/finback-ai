@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { CheckCircle2, Upload, AlertCircle, Sparkles } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
 import { ItemForm } from '@/components/Forms';
 import { useItems } from '@/hooks/useItems';
 import { useAuth } from '@/hooks/useAuth';
@@ -10,18 +10,27 @@ import { sendMatchEmail } from '@/hooks/useMatchNotification';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
+const RATE_LIMIT_MS = 10_000; // 10 seconds between submissions
+
 export default function Submit() {
   const [itemType, setItemType] = useState<'lost' | 'found'>('lost');
   const [submitted, setSubmitted] = useState(false);
   const { createItem } = useItems();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const lastSubmitRef = useRef<number>(0);
 
   const handleSubmit = async (formData: any) => {
-    if (!user) {
-      toast.error('You must be logged in to submit an item.');
+    if (!user) { toast.error('You must be logged in to submit an item.'); return; }
+
+    // ── Rate limit: prevent spam submissions ──────────────────────────────────
+    const now = Date.now();
+    if (now - lastSubmitRef.current < RATE_LIMIT_MS) {
+      const secondsLeft = Math.ceil((RATE_LIMIT_MS - (now - lastSubmitRef.current)) / 1000);
+      toast.error(`Please wait ${secondsLeft}s before submitting again.`);
       return;
     }
+    lastSubmitRef.current = now;
 
     const item = {
       title: formData.title,
@@ -99,23 +108,8 @@ export default function Submit() {
                 foundDate,
               });
 
-              // 2. Also email the owner of the MATCHED item (the other person)
-              if (matchedOppositeItem.user_id && matchedOppositeItem.user_id !== user!.id) {
-                const { data: { users: allUsers } } = await supabaseAdmin.auth.admin.listUsers();
-                const oppositeOwner = allUsers?.find((u: any) => u.id === matchedOppositeItem.user_id);
-                if (oppositeOwner?.email) {
-                  await sendMatchEmail({
-                    toEmail: oppositeOwner.email,
-                    userName: oppositeOwner.user_metadata?.full_name || oppositeOwner.email.split('@')[0],
-                    lostTitle: best.lostItem.title,
-                    foundTitle: best.foundItem.title,
-                    confidence: best.confidenceScore,
-                    foundLocation: best.foundItem.location_name || '',
-                    foundDate,
-                  });
-                  console.log('Match notification also sent to opposite item owner:', oppositeOwner.email);
-                }
-              }
+              // 2. Cross-user notification is handled server-side via Edge Function
+              console.log('Match found for opposite owner:', matchedOppositeItem.user_id);
             }
           }
         } catch (emailErr) {
@@ -144,24 +138,11 @@ export default function Submit() {
 
               // Delete the matched opposite item (it's been resolved)
               await supabase.from('items').delete().eq('id', matchedItem.id);
-
               // Also delete the newly submitted item since it's a duplicate resolution
               await supabase.from('items').delete().eq('id', newItem2.id);
 
-              // Notify the owner of the matched item that their item was found
-              const { data: { users: allUsers } } = await supabaseAdmin.auth.admin.listUsers();
-              const matchedOwner = allUsers?.find((u: any) => u.id === matchedItem.user_id);
-              if (matchedOwner?.email) {
-                await sendMatchEmail({
-                  toEmail: matchedOwner.email,
-                  userName: matchedOwner.user_metadata?.full_name || matchedOwner.email.split('@')[0],
-                  lostTitle: best2.lostItem.title,
-                  foundTitle: best2.foundItem.title,
-                  confidence: best2.confidenceScore,
-                  foundLocation: best2.foundItem.location_name || '',
-                  foundDate: new Date(best2.foundItem.date_found || best2.foundItem.created_at).toLocaleDateString(),
-                });
-              }
+              // Cross-user notification handled server-side
+              console.log('Auto-resolved: notifying owner of item', matchedItem.user_id);
 
               toast.success('🎉 Perfect match found! Both items have been resolved automatically.');
               setTimeout(() => navigate(ROUTE_PATHS.BROWSE), 2500);

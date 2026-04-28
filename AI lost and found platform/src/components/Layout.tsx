@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Home, Search, Upload, Zap, Shield, User, LogOut, Moon, Sun, X, Github, Twitter, Linkedin, ArrowRight, Sparkles } from 'lucide-react';
+import { Menu, Home, Search, Upload, Zap, Shield, User, LogOut, Moon, Sun, X, Github, Twitter, Linkedin, Sparkles } from 'lucide-react';
 import { ROUTE_PATHS } from '@/lib/index';
 import { useAuth } from '@/hooks/useAuth';
+import { NotificationBell } from '@/components/NotificationBell';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -159,6 +160,9 @@ export function Layout({ children }: LayoutProps) {
                 style={{ width:36, height:36, borderRadius:10, background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,0.6)', cursor:'pointer' }}>
                 {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
+
+              {/* Notification Bell — authenticated only */}
+              <NotificationBell />
 
               {isAuthenticated && user ? (
                 <DropdownMenu>

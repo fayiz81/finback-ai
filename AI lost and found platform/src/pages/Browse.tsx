@@ -1,11 +1,23 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, Grid3x3, List, MapPin, Calendar, Package } from 'lucide-react';
-import { ITEM_CATEGORIES } from '@/lib/index';
+import { Search, Filter, Grid3x3, List, MapPin, Calendar, Package, Share2 } from 'lucide-react';
+import { ITEM_CATEGORIES, ROUTE_PATHS } from '@/lib/index';
 import { useItems } from '@/hooks/useItems';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 type ViewMode = 'grid' | 'list';
 type SortOption = 'recent' | 'oldest' | 'category';
+
+function EmptyStateCTA({ type }: { type: 'lost' | 'found' }) {
+  const navigate = useNavigate();
+  return (
+    <motion.button whileHover={{ scale:1.02, y:-2 }} whileTap={{ scale:0.98 }} onClick={() => navigate(ROUTE_PATHS.SUBMIT)}
+      style={{ padding:'12px 28px', borderRadius:14, background:'linear-gradient(135deg,#7c3aed,#4f46e5)', color:'#fff', fontSize:14, fontWeight:700, border:'none', cursor:'pointer', boxShadow:'0 8px 24px rgba(124,58,237,0.3)' }}>
+      + Report a {type === 'lost' ? 'Lost' : 'Found'} Item
+    </motion.button>
+  );
+}
 
 const glass: React.CSSProperties = { background:'rgba(255,255,255,0.05)', backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)', border:'1px solid rgba(255,255,255,0.09)', borderRadius:20 };
 const glassStrong: React.CSSProperties = { background:'rgba(255,255,255,0.07)', backdropFilter:'blur(30px)', WebkitBackdropFilter:'blur(30px)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:14 };
@@ -132,13 +144,23 @@ export default function Browse() {
               {Array.from({ length:6 }).map((_,i) => <SkeletonCard key={i} />)}
             </motion.div>
           ) : currentItems.length === 0 ? (
-            <motion.div key="empty" initial={{ opacity:0, scale:0.96 }} animate={{ opacity:1, scale:1 }} exit={{ opacity:0 }} style={{ textAlign:'center', padding:'80px 0' }}>
+            <motion.div key="empty" initial={{ opacity:0, scale:0.96 }} animate={{ opacity:1, scale:1 }} exit={{ opacity:0 }}
+              style={{ textAlign:'center', padding:'80px 24px' }}>
               <motion.div animate={{ y:[0,-8,0] }} transition={{ duration:3, repeat:Infinity, ease:'easeInOut' }}
-                style={{ width:72, height:72, borderRadius:'50%', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px' }}>
-                <Filter style={{ width:28, height:28, color:'rgba(255,255,255,0.18)' }} />
+                style={{ width:88, height:88, borderRadius:24, background:'rgba(124,58,237,0.08)', border:'1px solid rgba(124,58,237,0.15)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 24px' }}>
+                <span style={{ fontSize:36 }}>{searchQuery ? '🔍' : activeTab === 'lost' ? '📦' : '🟢'}</span>
               </motion.div>
-              <h3 style={{ fontSize:20, fontWeight:700, color:'rgba(255,255,255,0.7)', marginBottom:8 }}>No items found</h3>
-              <p style={{ color:'rgba(255,255,255,0.35)', fontSize:14 }}>Try adjusting your filters or search query</p>
+              <h3 style={{ fontSize:22, fontWeight:800, color:'rgba(255,255,255,0.8)', marginBottom:10, letterSpacing:'-0.02em' }}>
+                {searchQuery ? `No results for "${searchQuery}"` : `No ${activeTab} items yet`}
+              </h3>
+              <p style={{ color:'rgba(255,255,255,0.35)', fontSize:14, lineHeight:1.7, marginBottom:24, maxWidth:320, margin:'0 auto 24px' }}>
+                {searchQuery
+                  ? 'Try a different keyword or clear the search filter'
+                  : `Be the first to report a ${activeTab} item. Our AI will automatically find matches.`}
+              </p>
+              {!searchQuery && (
+                <EmptyStateCTA type={activeTab} />
+              )}
             </motion.div>
           ) : (
             <motion.div key={`items-${activeTab}-${viewMode}`} initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
@@ -160,9 +182,23 @@ export default function Browse() {
                         <span style={{ position:'absolute', top:10, right:10, padding:'3px 10px', borderRadius:20, fontSize:11, fontWeight:700, background:isLost?'rgba(239,68,68,0.25)':'rgba(52,211,153,0.25)', color:isLost?'#f87171':'#34d399', border:`1px solid ${isLost?'rgba(239,68,68,0.4)':'rgba(52,211,153,0.4)'}`, backdropFilter:'blur(10px)' }}>
                           {item.type}
                         </span>
+                        {/* Status badge */}
+                        {item.status && item.status !== item.type && (
+                          <span style={{ position:'absolute', top:10, left:10, padding:'2px 8px', borderRadius:20, fontSize:10, fontWeight:700, background:'rgba(251,191,36,0.2)', color:'#fbbf24', border:'1px solid rgba(251,191,36,0.35)', backdropFilter:'blur(10px)' }}>
+                            {item.status}
+                          </span>
+                        )}
                       </div>
                       <div style={{ padding:'14px 16px', flex:1 }}>
-                        <h3 style={{ fontSize:15, fontWeight:700, color:'#fff', marginBottom:6, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.title}</h3>
+                        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:8, marginBottom:6 }}>
+                          <h3 style={{ fontSize:15, fontWeight:700, color:'#fff', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1 }}>{item.title}</h3>
+                          {/* Share button */}
+                          <motion.button whileHover={{ scale:1.1 }} whileTap={{ scale:0.9 }}
+                            onClick={e => { e.stopPropagation(); const url=`${window.location.origin}${window.location.pathname}#/browse?item=${item.id}`; navigator.clipboard.writeText(url).then(() => toast.success('Link copied!')).catch(() => toast.error('Could not copy link')); }}
+                            style={{ flexShrink:0, padding:'4px 6px', borderRadius:7, background:'rgba(124,58,237,0.08)', border:'1px solid rgba(124,58,237,0.15)', color:'#a78bfa', cursor:'pointer', display:'flex', alignItems:'center', gap:3, fontSize:10, fontWeight:600 }}>
+                            <Share2 style={{ width:11, height:11 }} /> Share
+                          </motion.button>
+                        </div>
                         <span style={{ display:'inline-block', padding:'2px 8px', borderRadius:6, fontSize:11, background:'rgba(124,58,237,0.1)', color:'#a78bfa', border:'1px solid rgba(124,58,237,0.2)', marginBottom:8 }}>{item.category}</span>
                         <p style={{ fontSize:13, color:'rgba(255,255,255,0.4)', lineHeight:1.5, marginBottom:10, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{item.description}</p>
                         <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
