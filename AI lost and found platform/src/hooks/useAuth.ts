@@ -101,18 +101,6 @@ export function useAuth() {
     return result;
   }, []);
 
-  // ── Google OAuth ────────────────────────────────────────────────────────────
-  const signInWithGoogle = useCallback(async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}${window.location.pathname}#/dashboard`,
-        queryParams: { access_type: 'offline', prompt: 'consent' },
-      },
-    });
-    return { error };
-  }, []);
-
   // ── Sign out — clears cache immediately ────────────────────────────────────
   const signOut = useCallback(async () => {
     writeCache(null);
@@ -133,7 +121,6 @@ export function useAuth() {
     signIn,
     signUp,
     signOut,
-    signInWithGoogle,
     isAdmin,
   };
 }
