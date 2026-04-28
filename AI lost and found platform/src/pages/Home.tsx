@@ -239,49 +239,46 @@ export default function Home() {
       <section style={{ minHeight:'100vh', display:'flex', alignItems:'center', padding:'80px 16px 64px', position:'relative' }}>
         <div style={{ maxWidth:1200, margin:'0 auto', width:'100%' }}>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(min(100%, 480px), 1fr))', gap:48, alignItems:'center' }}>
-            <div>
+            <div style={{ paddingRight: '20px' }}>
               <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }}
-                style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'6px 14px', borderRadius:20, background:'rgba(124,58,237,0.1)', border:'1px solid rgba(124,58,237,0.2)', marginBottom:28 }}>
+                style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'6px 16px', borderRadius:30, background:'rgba(124,58,237,0.1)', border:'1px solid rgba(124,58,237,0.25)', marginBottom:32, backdropFilter: 'blur(10px)' }}>
                 <span style={{ position:'relative', display:'inline-flex', width:8, height:8 }}>
                   <span style={{ position:'absolute', display:'inline-flex', width:'100%', height:'100%', borderRadius:'50%', background:'#34d399', opacity:0.75, animation:'ping 1.5s cubic-bezier(0,0,0.2,1) infinite' }} />
                   <span style={{ position:'relative', display:'inline-flex', width:8, height:8, borderRadius:'50%', background:'#34d399' }} />
                 </span>
-                <span style={{ fontSize:12, color:'#a78bfa', fontWeight:500 }}>
-                  {isAuthenticated ? `Welcome back, ${displayName} 👋` : 'AI-Powered Lost & Found — Campus Edition'}
+                <span style={{ fontSize:13, color:'#c4b5fd', fontWeight:600, letterSpacing: '0.02em' }}>
+                  {isAuthenticated ? `Welcome back, ${displayName} 👋` : 'FinBack Platform 2.0 is Live'}
                 </span>
               </motion.div>
 
               <motion.h1 initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.1, duration:0.65, ease:[0.22,1,0.36,1] }}
-                style={{ fontSize:56, fontWeight:800, lineHeight:1.05, letterSpacing:'-0.02em', marginBottom:20, color:'#fff' }}>
+                style={{ fontSize:'clamp(48px, 6vw, 72px)', fontWeight:900, lineHeight:1.05, letterSpacing:'-0.03em', marginBottom:24, color:'#fff' }}>
                 Never Lose
-                <span style={{ display:'block', background:'linear-gradient(135deg, #a78bfa, #60a5fa, #34d399)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>
-                  Anything Again
+                <span style={{ display:'block', background:'linear-gradient(135deg, #c4b5fd, #60a5fa, #34d399)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', paddingBottom: '8px' }}>
+                  Anything Again.
                 </span>
               </motion.h1>
 
               <motion.p initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.2 }}
-                style={{ fontSize:17, color:'rgba(255,255,255,0.5)', lineHeight:1.7, marginBottom:36, maxWidth:480 }}>
-                FinBack AI uses <strong style={{ color:'rgba(255,255,255,0.75)' }}>ChatGPT (GPT-4o)</strong> to semantically match lost and found items across your campus — understanding context, descriptions, and location like a human would.
+                style={{ fontSize:'clamp(16px, 1.5vw, 19px)', color:'rgba(255,255,255,0.6)', lineHeight:1.6, marginBottom:40, maxWidth:500, fontWeight: 400 }}>
+                FinBack uses <strong style={{ color:'#fff', fontWeight:600 }}>ChatGPT (GPT-4o)</strong> to semantically match lost and found items across your campus — analyzing context and location like a human would.
               </motion.p>
 
               <motion.div initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.3 }}
-                style={{ display:'flex', flexWrap:'wrap', gap:12, marginBottom:44 }}>
+                style={{ display:'flex', flexWrap:'wrap', gap:16, marginBottom:48 }}>
                 {isAuthenticated ? (
                   <>
-                    <Link to={ROUTE_PATHS.DASHBOARD} style={btnPrimary}>
-                      <LayoutDashboard style={{ width:16, height:16 }} /> Go to Dashboard
+                    <Link to={ROUTE_PATHS.DASHBOARD} style={{ ...btnPrimary, padding: '16px 28px', fontSize: 16 }}>
+                      <LayoutDashboard style={{ width:18, height:18 }} /> Go to Dashboard
                     </Link>
-                    <Link to={ROUTE_PATHS.BROWSE} style={btnOutline}>Browse Items</Link>
-                    <button onClick={() => signOut()} style={{ ...btnOutline, display:'inline-flex', alignItems:'center', gap:8, color:'rgba(255,255,255,0.5)', border:'1px solid rgba(255,255,255,0.08)' }}>
-                      <LogOut style={{ width:15, height:15 }} /> Sign Out
-                    </button>
+                    <Link to={ROUTE_PATHS.BROWSE} style={{ ...btnOutline, padding: '16px 28px', fontSize: 16 }}>Browse Items</Link>
                   </>
                 ) : (
                   <>
-                    <Link to={ROUTE_PATHS.AUTH} style={btnPrimary}>
-                      Get Started Free <ArrowRight style={{ width:16, height:16 }} />
+                    <Link to={ROUTE_PATHS.AUTH} style={{ ...btnPrimary, padding: '16px 28px', fontSize: 16 }}>
+                      Get Started Free <ArrowRight style={{ width:18, height:18 }} />
                     </Link>
-                    <Link to={ROUTE_PATHS.BROWSE} style={btnOutline}>Browse Items</Link>
+                    <Link to={ROUTE_PATHS.BROWSE} style={{ ...btnOutline, padding: '16px 28px', fontSize: 16 }}>Browse Items</Link>
                   </>
                 )}
               </motion.div>
@@ -301,13 +298,13 @@ export default function Home() {
               </motion.div>
               {/* Hero stats */}
               <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.45 }}
-                style={{ display:'flex', alignItems:'center', gap:24, paddingTop:28, borderTop:'1px solid rgba(255,255,255,0.08)' }}>
+                style={{ display:'flex', alignItems:'center', gap:32, paddingTop:32, borderTop:'1px solid rgba(255,255,255,0.08)' }}>
                 {heroStats.map((s,i) => (
-                  <div key={i} style={{ display:'flex', alignItems:'center', gap:20 }}>
-                    {i > 0 && <div style={{ width:1, height:32, background:'rgba(255,255,255,0.08)' }} />}
+                  <div key={i} style={{ display:'flex', alignItems:'center', gap:32 }}>
+                    {i > 0 && <div style={{ width:1, height:40, background:'rgba(255,255,255,0.08)' }} />}
                     <div>
-                      <div style={{ fontSize:22, fontWeight:700, color:'#fff', letterSpacing:'-0.01em' }}>{s.num}</div>
-                      <div style={{ fontSize:12, color:'rgba(255,255,255,0.35)' }}>{s.label}</div>
+                      <div style={{ fontSize:28, fontWeight:800, color:'#fff', letterSpacing:'-0.02em', marginBottom: 2 }}>{s.num}</div>
+                      <div style={{ fontSize:13, fontWeight: 500, color:'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</div>
                     </div>
                   </div>
                 ))}
@@ -317,6 +314,16 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── MARQUEE ── */}
+      <div style={{ overflow: 'hidden', padding: '32px 0', borderTop: '1px solid rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.02) 50%, transparent)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 48, opacity: 0.5, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.1em', color: '#fff' }}>TRUSTED BY STUDENTS</span>
+          <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.1em', color: '#fff' }}>POWERED BY GPT-4O</span>
+          <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.1em', color: '#fff' }}>SECURE & PRIVATE</span>
+          <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.1em', color: '#fff' }}>94% ACCURACY</span>
+        </div>
+      </div>
 
       {/* ── STATS STRIP ── */}
       <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)', borderBottom:'1px solid rgba(255,255,255,0.06)', background:'rgba(0,0,0,0.2)', backdropFilter:'blur(20px)', padding:'48px 16px' }}>
@@ -337,34 +344,62 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── FEATURES ── */}
-      <section style={{ padding:'80px 16px' }}>
+      {/* ── FEATURES BENTO GRID ── */}
+      <section style={{ padding:'100px 16px' }}>
         <div style={{ maxWidth:1200, margin:'0 auto' }}>
-          <FadeUp style={{ textAlign:'center', marginBottom:56 } as React.CSSProperties}>
-            <div style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:11, color:'#a78bfa', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:16 }}>
-              <span style={{ width:20, height:1, background:'#a78bfa', display:'inline-block' }} /> Core Features
+          <FadeUp style={{ textAlign:'center', marginBottom:64 } as React.CSSProperties}>
+            <div style={{ display:'inline-flex', alignItems:'center', gap:8, fontSize:12, fontWeight: 700, color:'#c4b5fd', textTransform:'uppercase', letterSpacing:'0.15em', marginBottom:20 }}>
+              <span style={{ width:24, height:2, background:'#c4b5fd', display:'inline-block' }} /> Intelligent Recovery
             </div>
-            <h2 style={{ fontSize:40, fontWeight:700, color:'#fff', marginBottom:14, letterSpacing:'-0.02em' }}>
-              Powered by AI,{' '}
-              <span style={{ background:'linear-gradient(135deg,#a78bfa,#60a5fa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>built for students</span>
+            <h2 style={{ fontSize:'clamp(36px, 4vw, 48px)', fontWeight:800, color:'#fff', marginBottom:16, letterSpacing:'-0.03em' }}>
+              Built for <span style={{ background:'linear-gradient(135deg,#c4b5fd,#60a5fa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>Performance.</span>
             </h2>
-            <p style={{ fontSize:16, color:'rgba(255,255,255,0.45)', maxWidth:480, margin:'0 auto', lineHeight:1.6 }}>
-              Advanced technology meets intuitive design to reunite you with your belongings.
+            <p style={{ fontSize:18, color:'rgba(255,255,255,0.5)', maxWidth:520, margin:'0 auto', lineHeight:1.6 }}>
+              Advanced semantic analysis meets a flawless user experience.
             </p>
           </FadeUp>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap:16 }}>
+          
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(min(100%, 350px), 1fr))', gap:24 }}>
             {features.map((f,i) => {
               const Icon = f.icon;
               return (
-                <FadeUp key={i} delay={i*0.1}>
-                  <div style={{ ...glass, padding:28, height:'100%', background:`rgba(255,255,255,0.04)`, transition:'all 0.3s', boxShadow:`0 0 40px ${f.glow}`, borderColor:f.border }}
-                    onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.transform='translateY(-4px)'}
-                    onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.transform='translateY(0)'}>
-                    <div style={{ width:44, height:44, borderRadius:14, background:f.iconBg, border:`1px solid ${f.border}`, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:20 }}>
-                      <Icon style={{ width:20, height:20, color:f.iconColor }} />
+                <FadeUp key={i} delay={i*0.1} style={{ gridColumn: i === 0 ? '1 / -1' : 'auto' }}>
+                  <div style={{ 
+                    ...glass, 
+                    padding: i === 0 ? '48px' : '36px', 
+                    height:'100%', 
+                    background:`rgba(255,255,255,0.03)`, 
+                    transition:'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)', 
+                    boxShadow:`0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.1)`, 
+                    borderColor:'rgba(255,255,255,0.08)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: i === 0 ? 'row' : 'column',
+                    alignItems: i === 0 ? 'center' : 'flex-start',
+                    gap: i === 0 ? 40 : 0
+                  }}
+                    onMouseEnter={e => {
+                      (e.currentTarget as HTMLDivElement).style.transform='translateY(-6px)';
+                      (e.currentTarget as HTMLDivElement).style.background='rgba(255,255,255,0.05)';
+                      (e.currentTarget as HTMLDivElement).style.borderColor=f.border;
+                    }}
+                    onMouseLeave={e => {
+                      (e.currentTarget as HTMLDivElement).style.transform='translateY(0)';
+                      (e.currentTarget as HTMLDivElement).style.background='rgba(255,255,255,0.03)';
+                      (e.currentTarget as HTMLDivElement).style.borderColor='rgba(255,255,255,0.08)';
+                    }}>
+                    
+                    <div style={{ position: 'absolute', top: '-20%', left: '-20%', width: '140%', height: '140%', background: `radial-gradient(circle at center, ${f.glow} 0%, transparent 60%)`, zIndex: 0, pointerEvents: 'none' }} />
+                    
+                    <div style={{ width: i===0 ? 80 : 56, height: i===0 ? 80 : 56, borderRadius:20, background:f.iconBg, border:`1px solid ${f.border}`, display:'flex', alignItems:'center', justifyContent:'center', marginBottom: i===0 ? 0 : 24, zIndex: 1, flexShrink: 0, boxShadow: `0 0 20px ${f.glow}` }}>
+                      <Icon style={{ width: i===0 ? 32 : 24, height: i===0 ? 32 : 24, color:f.iconColor }} />
                     </div>
-                    <h3 style={{ fontSize:17, fontWeight:700, color:'#fff', marginBottom:10, letterSpacing:'-0.01em' }}>{f.title}</h3>
-                    <p style={{ color:'rgba(255,255,255,0.45)', lineHeight:1.6, fontSize:14, margin:0 }}>{f.description}</p>
+                    
+                    <div style={{ zIndex: 1 }}>
+                      <h3 style={{ fontSize: i===0 ? 28 : 22, fontWeight:800, color:'#fff', marginBottom:12, letterSpacing:'-0.02em' }}>{f.title}</h3>
+                      <p style={{ color:'rgba(255,255,255,0.6)', lineHeight:1.6, fontSize: i===0 ? 18 : 15, margin:0 }}>{f.description}</p>
+                    </div>
                   </div>
                 </FadeUp>
               );
@@ -373,27 +408,23 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── HOW IT WORKS ── */}
-      <section style={{ padding:'80px 16px', borderTop:'1px solid rgba(255,255,255,0.06)', background:'rgba(0,0,0,0.15)' }}>
+      {/* ── HOW IT WORKS TIMELINE ── */}
+      <section style={{ padding:'100px 16px', background:'linear-gradient(to bottom, rgba(0,0,0,0), rgba(124,58,237,0.03))' }}>
         <div style={{ maxWidth:1200, margin:'0 auto' }}>
-          <FadeUp style={{ textAlign:'center', marginBottom:56 } as React.CSSProperties}>
-            <div style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:11, color:'#a78bfa', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:16 }}>
-              <span style={{ width:20, height:1, background:'#a78bfa', display:'inline-block' }} /> How it works
-            </div>
-            <h2 style={{ fontSize:40, fontWeight:700, color:'#fff', letterSpacing:'-0.02em' }}>
-              From lost to found{' '}
-              <span style={{ background:'linear-gradient(135deg,#a78bfa,#60a5fa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>in four steps</span>
+          <FadeUp style={{ textAlign:'center', marginBottom:80 } as React.CSSProperties}>
+            <h2 style={{ fontSize:'clamp(36px, 4vw, 48px)', fontWeight:800, color:'#fff', letterSpacing:'-0.03em' }}>
+              From lost to found in{' '}
+              <span style={{ background:'linear-gradient(135deg,#c4b5fd,#60a5fa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>seconds.</span>
             </h2>
           </FadeUp>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap:14 }}>
+          
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap:32, position: 'relative' }}>
             {howItWorks.map((item,i) => (
               <FadeUp key={i} delay={i*0.1}>
-                <div style={{ ...glass, padding:24, height:'100%', transition:'all 0.3s' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.borderColor='rgba(124,58,237,0.25)'}
-                  onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.borderColor='rgba(255,255,255,0.1)'}>
-                  <div style={{ fontSize:44, fontWeight:800, color:'rgba(124,58,237,0.15)', marginBottom:16, fontFamily:'monospace' }}>{item.step}</div>
-                  <h3 style={{ fontSize:16, fontWeight:700, color:'#fff', marginBottom:8 }}>{item.title}</h3>
-                  <p style={{ color:'rgba(255,255,255,0.4)', fontSize:13, lineHeight:1.6, margin:0 }}>{item.description}</p>
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                  <div style={{ fontSize:72, fontWeight:900, color:'rgba(255,255,255,0.03)', marginBottom:-20, fontFamily:'Inter, sans-serif', letterSpacing: '-0.05em' }}>{item.step}</div>
+                  <h3 style={{ fontSize:20, fontWeight:800, color:'#fff', marginBottom:12, letterSpacing: '-0.01em' }}>{item.title}</h3>
+                  <p style={{ color:'rgba(255,255,255,0.5)', fontSize:15, lineHeight:1.6, margin:0 }}>{item.description}</p>
                 </div>
               </FadeUp>
             ))}
@@ -402,37 +433,39 @@ export default function Home() {
       </section>
 
       {/* ── CTA ── */}
-      <section style={{ padding:'80px 16px' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto' }}>
+      <section style={{ padding:'100px 16px' }}>
+        <div style={{ maxWidth:1000, margin:'0 auto' }}>
           <FadeUp>
-            <div style={{ ...glass, padding:'60px 40px', textAlign:'center', position:'relative', overflow:'hidden', background:'rgba(124,58,237,0.06)', borderColor:'rgba(124,58,237,0.2)', boxShadow:'0 0 80px rgba(124,58,237,0.1)' }}>
-              {/* Top line */}
-              <div style={{ position:'absolute', top:0, left:'25%', right:'25%', height:1, background:'linear-gradient(90deg,transparent,rgba(124,58,237,0.6),transparent)' }} />
-              <h2 style={{ fontSize:40, fontWeight:700, color:'#fff', marginBottom:16, letterSpacing:'-0.02em' }}>
+            <div style={{ ...glass, padding:'80px 40px', textAlign:'center', position:'relative', overflow:'hidden', background:'linear-gradient(180deg, rgba(124,58,237,0.08) 0%, rgba(124,58,237,0.02) 100%)', borderColor:'rgba(124,58,237,0.3)', boxShadow:'0 20px 80px rgba(124,58,237,0.15), inset 0 1px 0 rgba(255,255,255,0.2)', borderRadius: 32 }}>
+              
+              <div style={{ position:'absolute', top:0, left:'10%', right:'10%', height:1, background:'linear-gradient(90deg,transparent,rgba(167,139,250,0.8),transparent)' }} />
+              <div style={{ position:'absolute', top:0, left:'30%', right:'30%', height:1, background:'linear-gradient(90deg,transparent,#fff,transparent)', boxShadow: '0 0 20px #fff' }} />
+              
+              <h2 style={{ fontSize:'clamp(40px, 5vw, 56px)', fontWeight:900, color:'#fff', marginBottom:20, letterSpacing:'-0.03em', lineHeight: 1.1 }}>
                 Ready to find your{' '}
-                <span style={{ background:'linear-gradient(135deg,#a78bfa,#60a5fa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>lost items?</span>
+                <span style={{ background:'linear-gradient(135deg,#c4b5fd,#60a5fa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>belongings?</span>
               </h2>
-              <p style={{ fontSize:16, color:'rgba(255,255,255,0.45)', marginBottom:36, maxWidth:480, margin:'0 auto 36px', lineHeight:1.6 }}>
-                Join thousands of students already using FinBack AI to recover their belongings.
+              <p style={{ fontSize:18, color:'rgba(255,255,255,0.6)', marginBottom:48, maxWidth:500, margin:'0 auto 48px', lineHeight:1.6 }}>
+                Join thousands of students already using FinBack to recover their items instantly.
               </p>
-              <div style={{ display:'flex', flexWrap:'wrap', gap:12, alignItems:'center', justifyContent:'center' }}>
+              <div style={{ display:'flex', flexWrap:'wrap', gap:16, alignItems:'center', justifyContent:'center' }}>
                 {isAuthenticated ? (
                   <>
-                    <Link to={ROUTE_PATHS.SUBMIT} style={{ ...btnPrimary, padding:'14px 32px' }}>
-                      Submit an Item <ArrowRight style={{ width:16, height:16 }} />
+                    <Link to={ROUTE_PATHS.SUBMIT} style={{ ...btnPrimary, padding:'18px 36px', fontSize: 16 }}>
+                      Submit an Item <ArrowRight style={{ width:18, height:18 }} />
                     </Link>
-                    <Link to={ROUTE_PATHS.MATCHES} style={{ ...btnOutline, padding:'14px 32px' }}>View AI Matches</Link>
+                    <Link to={ROUTE_PATHS.MATCHES} style={{ ...btnOutline, padding:'18px 36px', fontSize: 16 }}>View AI Matches</Link>
                   </>
                 ) : (
                   <>
-                    <Link to={ROUTE_PATHS.AUTH} style={{ ...btnPrimary, padding:'14px 32px' }}>
-                      Create Free Account <ArrowRight style={{ width:16, height:16 }} />
+                    <Link to={ROUTE_PATHS.AUTH} style={{ ...btnPrimary, padding:'18px 36px', fontSize: 16 }}>
+                      Create Free Account <ArrowRight style={{ width:18, height:18 }} />
                     </Link>
-                    <Link to={ROUTE_PATHS.SUBMIT} style={{ ...btnOutline, padding:'14px 32px' }}>Report an Item</Link>
+                    <Link to={ROUTE_PATHS.SUBMIT} style={{ ...btnOutline, padding:'18px 36px', fontSize: 16 }}>Report an Item</Link>
                   </>
                 )}
               </div>
-              <p style={{ marginTop:20, fontSize:12, color:'rgba(255,255,255,0.25)' }}>No credit card required · Free campus plan · Cancel anytime</p>
+              <p style={{ marginTop:28, fontSize:13, color:'rgba(255,255,255,0.3)', fontWeight: 500 }}>Free forever for students. No credit card required.</p>
             </div>
           </FadeUp>
         </div>
