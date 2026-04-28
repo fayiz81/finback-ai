@@ -71,53 +71,64 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className={isDarkMode ? 'finback-dark' : 'finback-light'} style={{ minHeight:'100vh' }}>
-      {/* Global animated deep-space background */}
+      {/* Global animated deep-space background (Creative AI Theme) */}
       {isDarkMode && (
-        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 bg-[#08080f]">
-          {/* Animated Stars / Particles */}
-          <div className="absolute inset-0 opacity-40">
-            {[...Array(20)].map((_, i) => (
+        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 bg-[#06060c]">
+          
+          {/* 1. Animated Perspective Grid */}
+          <div 
+            style={{ 
+              position: 'absolute', inset: -1000, 
+              backgroundImage: 'linear-gradient(rgba(124, 58, 237, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(124, 58, 237, 0.05) 1px, transparent 1px)',
+              backgroundSize: '40px 40px',
+              transform: 'perspective(1000px) rotateX(60deg) translateY(-100px) translateZ(-200px)',
+              maskImage: 'radial-gradient(ellipse at center, black 10%, transparent 70%)',
+              WebkitMaskImage: 'radial-gradient(ellipse at center, black 10%, transparent 70%)',
+            }}
+          >
+            <motion.div 
+              animate={{ backgroundPosition: ['0px 0px', '0px 400px'] }} 
+              transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+              style={{ position: 'absolute', inset: 0, backgroundImage: 'inherit', backgroundSize: 'inherit' }}
+            />
+          </div>
+
+          {/* 2. Synapse Flashes (Data Streams) */}
+          <div className="absolute inset-0 opacity-60">
+            {[...Array(6)].map((_, i) => (
               <motion.div
-                key={`star-${i}`}
-                initial={{ opacity: 0, scale: 0 }}
-                animate={{
-                  opacity: [0, Math.random() * 0.5 + 0.3, 0],
-                  scale: [0, Math.random() + 0.5, 0],
-                  x: Math.random() * 200 - 100,
-                  y: Math.random() * -300 - 100
-                }}
-                transition={{
-                  duration: Math.random() * 10 + 10,
-                  repeat: Infinity,
-                  delay: Math.random() * 10,
-                  ease: 'linear'
+                key={`synapse-${i}`}
+                initial={{ x: '-100vw', opacity: 0 }}
+                animate={{ x: '100vw', opacity: [0, 1, 1, 0] }}
+                transition={{ 
+                  duration: Math.random() * 2 + 2, 
+                  repeat: Infinity, 
+                  delay: Math.random() * 8, 
+                  ease: 'easeInOut' 
                 }}
                 style={{
                   position: 'absolute',
-                  top: `${Math.random() * 100}%`,
-                  left: `${Math.random() * 100}%`,
-                  width: Math.random() * 3 + 1,
-                  height: Math.random() * 3 + 1,
-                  backgroundColor: ['#a78bfa', '#60a5fa', '#fff'][i % 3],
-                  borderRadius: '50%',
-                  boxShadow: `0 0 ${Math.random() * 10 + 5}px ${['#a78bfa', '#60a5fa', '#fff'][i % 3]}`
+                  top: `${15 + Math.random() * 70}%`,
+                  left: 0,
+                  width: '15vw',
+                  height: '1px',
+                  background: `linear-gradient(90deg, transparent, ${i % 2 === 0 ? '#60a5fa' : '#a78bfa'}, transparent)`,
+                  boxShadow: `0 0 10px ${i % 2 === 0 ? '#60a5fa' : '#a78bfa'}`,
+                  rotate: Math.random() > 0.5 ? '5deg' : '-5deg'
                 }}
               />
             ))}
           </div>
 
-          {/* Deep Space Orbs */}
-          <motion.div animate={{ scale:[1, 1.25, 1], x:[0, 80, -40, 0], y:[0, -60, 40, 0] }} transition={{ duration:25, repeat:Infinity, ease:'easeInOut' }}
-            style={{ position:'absolute', width:'60vw', height:'60vw', borderRadius:'50%', background:'radial-gradient(circle, rgba(124,58,237,0.18) 0%, transparent 60%)', top:'-20%', left:'-10%', filter:'blur(80px)', mixBlendMode:'screen' }} />
+          {/* 3. Deep Space Breathing Orbs */}
+          <motion.div animate={{ scale:[1, 1.4, 1], rotate: [0, 90, 0] }} transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
+            style={{ position:'absolute', width:'50vw', height:'30vw', borderRadius:'50%', background:'radial-gradient(ellipse, rgba(124,58,237,0.12) 0%, transparent 60%)', top:'-10%', left:'10%', filter:'blur(60px)', mixBlendMode:'screen' }} />
           
-          <motion.div animate={{ scale:[1, 1.15, 0.9, 1], x:[0, -100, 50, 0], y:[0, 70, -30, 0] }} transition={{ duration:32, repeat:Infinity, ease:'easeInOut', delay:2 }}
-            style={{ position:'absolute', width:'50vw', height:'50vw', borderRadius:'50%', background:'radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 60%)', bottom:'-15%', right:'-10%', filter:'blur(80px)', mixBlendMode:'screen' }} />
+          <motion.div animate={{ scale:[1, 1.2, 0.8, 1], rotate: [0, -90, 0] }} transition={{ duration: 25, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+            style={{ position:'absolute', width:'60vw', height:'40vw', borderRadius:'50%', background:'radial-gradient(ellipse, rgba(59,130,246,0.1) 0%, transparent 60%)', bottom:'-20%', right:'-10%', filter:'blur(80px)', mixBlendMode:'screen' }} />
             
-          <motion.div animate={{ scale:[0.9, 1.2, 0.9], x:[0, 60, -60, 0], y:[0, 80, -80, 0] }} transition={{ duration:28, repeat:Infinity, ease:'easeInOut', delay:5 }}
-            style={{ position:'absolute', width:'45vw', height:'45vw', borderRadius:'50%', background:'radial-gradient(circle, rgba(79,70,229,0.12) 0%, transparent 60%)', top:'30%', left:'30%', filter:'blur(90px)', mixBlendMode:'screen' }} />
-            
-          <motion.div animate={{ scale:[1, 1.3, 1], opacity:[0.3, 0.7, 0.3] }} transition={{ duration:15, repeat:Infinity, ease:'easeInOut' }}
-            style={{ position:'absolute', width:'100vw', height:'2px', background:'linear-gradient(90deg, transparent, rgba(167,139,250,0.15), transparent)', top:'60%', left:0, transformOrigin:'left', rotate:'-15deg' }} />
+          <motion.div animate={{ scale:[0.8, 1.3, 0.8], opacity: [0.3, 0.6, 0.3] }} transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut', delay: 5 }}
+            style={{ position:'absolute', width:'40vw', height:'40vw', borderRadius:'50%', background:'radial-gradient(circle, rgba(236,72,153,0.08) 0%, transparent 60%)', top:'40%', left:'30%', filter:'blur(90px)', mixBlendMode:'screen' }} />
         </div>
       )}
 
