@@ -3,27 +3,73 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FinBack AI — Smart Lost & Found Platform</title>
-    <meta name="description" content="AI-powered lost and found platform for college campuses. Find your lost items with advanced neural network matching." />
+
+    <!-- Primary SEO -->
+    <title>FinBack AI — AI-Powered Lost &amp; Found for College Campuses</title>
+    <meta name="description" content="FinBack AI uses ChatGPT (GPT-4o) to semantically match lost and found items across your campus in seconds. Free for students." />
+    <meta name="keywords" content="lost and found, AI matching, campus lost found, college lost found, GPT-4o, item recovery" />
     <meta name="author" content="FinBack AI" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://finback-ai.vercel.app" />
+
+    <!-- Favicon -->
     <link rel="icon" type="image/png" sizes="32x32" href="/logo.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/logo.png" />
     <link rel="shortcut icon" href="/logo.png" />
-    <link rel="apple-touch-icon" href="/logo.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/logo.png" />
 
-    <meta property="og:title" content="FinBack AI — Smart Lost &amp; Found" />
-    <meta property="og:description" content="AI-powered lost and found platform for college campuses." />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="/logo.png" />
-    <meta property="og:url" content="https://finback-ai.vercel.app" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="FinBack AI — Smart Lost &amp; Found" />
-    <meta name="twitter:description" content="AI-powered lost and found platform for college campuses." />
-    <meta name="twitter:image" content="/logo.png" />
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#7c3aed" />
-    <meta name="robots" content="index, follow" />
-  </head>
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="FinBack AI" />
 
+    <!-- Open Graph -->
+    <meta property="og:site_name" content="FinBack AI" />
+    <meta property="og:title" content="FinBack AI — AI-Powered Lost &amp; Found" />
+    <meta property="og:description" content="ChatGPT-powered platform that matches lost and found items for college campuses in seconds." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://finback-ai.vercel.app/logo.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:url" content="https://finback-ai.vercel.app" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@finbackai" />
+    <meta name="twitter:title" content="FinBack AI — AI-Powered Lost &amp; Found" />
+    <meta name="twitter:description" content="ChatGPT-powered campus lost &amp; found. Find your stuff in seconds." />
+    <meta name="twitter:image" content="https://finback-ai.vercel.app/logo.png" />
+
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "FinBack AI",
+      "description": "AI-powered lost and found platform for college campuses using ChatGPT for semantic item matching.",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "Web",
+      "url": "https://finback-ai.vercel.app",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "creator": {
+        "@type": "Organization",
+        "name": "FinBack AI"
+      }
+    }
+    </script>
+  </head>
 
   <body>
     <div id="root"></div>

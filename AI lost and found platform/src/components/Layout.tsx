@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Home, Search, Upload, Zap, Shield, User, LogOut, Moon, Sun } from 'lucide-react';
+import { Menu, Home, Search, Upload, Zap, Shield, User, LogOut, Moon, Sun, X, Github, Twitter, Linkedin, ArrowRight, Sparkles } from 'lucide-react';
 import { ROUTE_PATHS } from '@/lib/index';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -61,20 +61,47 @@ export function Layout({ children }: LayoutProps) {
     { to: ROUTE_PATHS.BROWSE, label: 'Browse', icon: Search },
     { to: ROUTE_PATHS.SUBMIT, label: 'Submit Item', icon: Upload },
     ...(isAuthenticated ? [{ to: ROUTE_PATHS.DASHBOARD, label: 'Dashboard', icon: Zap }] : []),
-    ...(isAuthenticated ? [{ to: ROUTE_PATHS.MATCHES, label: 'Matches', icon: Zap }] : []),
+    ...(isAuthenticated ? [{ to: ROUTE_PATHS.MATCHES, label: 'Matches', icon: Zap, badge: 'New' }] : []),
     ...(isAdmin() ? [{ to: ROUTE_PATHS.ADMIN, label: 'Admin', icon: Shield }] : []),
-  ];
+  ] as Array<{ to: string; label: string; icon: any; badge?: string }>;
+
+  const [bannerVisible, setBannerVisible] = useState(() => localStorage.getItem('finback-banner') !== 'hidden');
+  const hideBanner = () => { setBannerVisible(false); localStorage.setItem('finback-banner','hidden'); };
 
   return (
     <div className={isDarkMode ? 'finback-dark' : 'finback-light'} style={{ minHeight:'100vh' }}>
-      {/* Global ambient blobs — dark mode only */}
+      {/* Global ambient blobs */}
       {isDarkMode && (
         <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-          <div style={{ position:'absolute', width:600, height:600, borderRadius:'50%', background:'radial-gradient(circle, rgba(109,40,217,0.2) 0%, transparent 70%)', top:-200, left:-100 }} />
-          <div style={{ position:'absolute', width:500, height:500, borderRadius:'50%', background:'radial-gradient(circle, rgba(5,150,105,0.15) 0%, transparent 70%)', bottom:-100, right:-100 }} />
-          <div style={{ position:'absolute', width:400, height:400, borderRadius:'50%', background:'radial-gradient(circle, rgba(37,99,235,0.12) 0%, transparent 70%)', top:'50%', left:'50%', transform:'translate(-50%,-50%)' }} />
+          <motion.div animate={{ scale:[1,1.1,1], x:[0,20,0] }} transition={{ duration:20, repeat:Infinity, ease:'easeInOut' }}
+            style={{ position:'absolute', width:600, height:600, borderRadius:'50%', background:'radial-gradient(circle, rgba(109,40,217,0.18) 0%, transparent 70%)', top:-200, left:-100, filter:'blur(30px)' }} />
+          <motion.div animate={{ scale:[1,0.9,1], y:[0,-20,0] }} transition={{ duration:25, repeat:Infinity, ease:'easeInOut', delay:5 }}
+            style={{ position:'absolute', width:500, height:500, borderRadius:'50%', background:'radial-gradient(circle, rgba(5,150,105,0.12) 0%, transparent 70%)', bottom:-100, right:-100, filter:'blur(30px)' }} />
         </div>
       )}
+
+      {/* ── Announcement Banner ── */}
+      <AnimatePresence>
+        {bannerVisible && (
+          <motion.div initial={{ height:0, opacity:0 }} animate={{ height:'auto', opacity:1 }} exit={{ height:0, opacity:0 }} transition={{ duration:0.3 }}
+            style={{ background:'linear-gradient(90deg,rgba(124,58,237,0.9),rgba(79,70,229,0.9))', position:'relative', zIndex:60, overflow:'hidden' }}>
+            <motion.div animate={{ x:['-100%','200%'] }} transition={{ duration:4, repeat:Infinity, repeatDelay:3 }}
+              style={{ position:'absolute', inset:0, background:'linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent)', pointerEvents:'none' }} />
+            <div style={{ maxWidth:1200, margin:'0 auto', padding:'9px 48px', display:'flex', alignItems:'center', justifyContent:'center', gap:10, position:'relative' }}>
+              <motion.div animate={{ rotate:[0,15,-10,15,0] }} transition={{ duration:3, repeat:Infinity, repeatDelay:2 }}>
+                <Sparkles style={{ width:13, height:13, color:'#e9d5ff' }} />
+              </motion.div>
+              <span style={{ fontSize:12, color:'#e9d5ff', fontWeight:500, textAlign:'center' }}>
+                🎉 <strong>FinBack AI v2.0</strong> is live — now powered by <strong>GPT-4o</strong> with 94% match accuracy.
+                <NavLink to="/auth" style={{ color:'#c4b5fd', marginLeft:8, textDecoration:'underline', fontWeight:600 }}>Try it free →</NavLink>
+              </span>
+              <button onClick={hideBanner} style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'transparent', border:'none', color:'rgba(255,255,255,0.5)', cursor:'pointer', padding:4 }}>
+                <X style={{ width:14, height:14 }} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Header */}
       <header ref={headerRef} style={{
@@ -114,6 +141,9 @@ export function Layout({ children }: LayoutProps) {
                     })}>
                     <item.icon className="h-4 w-4" />
                     {item.label}
+                    {item.badge && (
+                      <span style={{ fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:20, background:'linear-gradient(135deg,#7c3aed,#4f46e5)', color:'#e9d5ff', letterSpacing:'0.04em', textTransform:'uppercase' }}>{item.badge}</span>
+                    )}
                   </NavLink>
                 ))}
               </nav>
@@ -216,37 +246,57 @@ export function Layout({ children }: LayoutProps) {
       </main>
 
       {/* Footer */}
-      <footer style={{
-        borderTop: isDarkMode ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.08)',
-        background: isDarkMode ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.6)',
-        backdropFilter:'blur(20px)', position:'relative', zIndex:1
-      }}>
-        <div className="container mx-auto px-4 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <div style={{ width:32, height:32, borderRadius:8, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 12px rgba(124,58,237,0.3)' }}>
+      <footer style={{ borderTop:'1px solid rgba(255,255,255,0.07)', background:'rgba(5,4,15,0.95)', backdropFilter:'blur(20px)', position:'relative', zIndex:1 }}>
+        {/* Top gradient line */}
+        <div style={{ height:1, background:'linear-gradient(90deg,transparent,rgba(124,58,237,0.5),rgba(96,165,250,0.4),rgba(52,211,153,0.3),transparent)' }} />
+        <div style={{ maxWidth:1200, margin:'0 auto', padding:'56px 24px 32px' }}>
+
+          {/* Top grid */}
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))', gap:40, marginBottom:52 }}>
+
+            {/* Brand column */}
+            <div style={{ gridColumn:'span 1' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
+                <div style={{ width:36, height:36, borderRadius:10, overflow:'hidden', boxShadow:'0 0 20px rgba(124,58,237,0.4)' }}>
                   <img src="/logo.png" alt="FinBack AI" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                 </div>
-                <span style={{ fontSize:16, fontWeight:700, color:'#fff' }}>FinBack AI</span>
+                <span style={{ fontSize:18, fontWeight:800, background:'linear-gradient(135deg,#a78bfa,#60a5fa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>FinBack AI</span>
               </div>
-              <p style={{ fontSize:13, color:'rgba(255,255,255,0.4)', lineHeight:1.6 }}>
-                AI-powered smart lost and found platform for colleges. Never lose track of your belongings again.
+              <p style={{ fontSize:13, color:'rgba(255,255,255,0.35)', lineHeight:1.75, marginBottom:20, maxWidth:220 }}>
+                The AI-powered lost &amp; found platform built for modern campuses. Powered by GPT-4o.
               </p>
+              {/* Social links */}
+              <div style={{ display:'flex', gap:8 }}>
+                {[
+                  { icon:Github,   href:'https://github.com/fayiz81/finback-ai', label:'GitHub' },
+                  { icon:Twitter,  href:'#', label:'Twitter' },
+                  { icon:Linkedin, href:'#', label:'LinkedIn' },
+                ].map(({ icon:Icon, href, label }) => (
+                  <motion.a key={label} href={href} target="_blank" rel="noopener noreferrer"
+                    whileHover={{ scale:1.1, y:-2 }} whileTap={{ scale:0.95 }}
+                    style={{ width:34, height:34, borderRadius:9, background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.09)', display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,0.45)', textDecoration:'none', transition:'color 0.2s' }}
+                    onMouseEnter={e => (e.currentTarget.style.color='#a78bfa')}
+                    onMouseLeave={e => (e.currentTarget.style.color='rgba(255,255,255,0.45)')}>
+                    <Icon style={{ width:15, height:15 }} />
+                  </motion.a>
+                ))}
+              </div>
             </div>
+
+            {/* Nav columns */}
             {[
-              { title:'Platform', links:[{label:'Browse Items',to:ROUTE_PATHS.BROWSE},{label:'Submit Item',to:ROUTE_PATHS.SUBMIT},{label:'View Matches',to:ROUTE_PATHS.MATCHES}] },
-              { title:'Company', links:[{label:'About Us',to:'#'},{label:'Contact',to:'#'},{label:'Privacy Policy',to:'#'}] },
-              { title:'Support', links:[{label:'Help Center',to:'#'},{label:'Terms of Service',to:'#'},{label:'Report Issue',to:'#'}] },
+              { title:'Product', links:[{label:'Browse Items',to:ROUTE_PATHS.BROWSE},{label:'Submit Item',to:ROUTE_PATHS.SUBMIT},{label:'AI Matches',to:ROUTE_PATHS.MATCHES},{label:'Dashboard',to:ROUTE_PATHS.DASHBOARD}] },
+              { title:'Company', links:[{label:'About',to:'#'},{label:'Blog',to:'#'},{label:'Careers',to:'#'},{label:'Press Kit',to:'#'}] },
+              { title:'Legal', links:[{label:'Privacy Policy',to:'#'},{label:'Terms of Service',to:'#'},{label:'Cookie Policy',to:'#'},{label:'GDPR',to:'#'}] },
             ].map((col) => (
               <div key={col.title}>
-                <h3 style={{ fontWeight:600, color:'rgba(255,255,255,0.7)', marginBottom:16, fontSize:14 }}>{col.title}</h3>
-                <ul className="space-y-2">
-                  {col.links.map((l) => (
+                <h3 style={{ fontSize:12, fontWeight:700, color:'rgba(255,255,255,0.5)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:18 }}>{col.title}</h3>
+                <ul style={{ listStyle:'none', display:'flex', flexDirection:'column', gap:11 }}>
+                  {col.links.map(l => (
                     <li key={l.label}>
-                      <NavLink to={l.to} style={{ fontSize:13, color:'rgba(255,255,255,0.35)', textDecoration:'none' }}
-                        onMouseEnter={e => (e.currentTarget.style.color='rgba(255,255,255,0.7)') }
-                        onMouseLeave={e => (e.currentTarget.style.color='rgba(255,255,255,0.35)')}>
+                      <NavLink to={l.to} style={{ fontSize:13, color:'rgba(255,255,255,0.35)', textDecoration:'none', transition:'color 0.15s', display:'flex', alignItems:'center', gap:5 }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color='rgba(167,139,250,0.8)'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color='rgba(255,255,255,0.35)'; }}>
                         {l.label}
                       </NavLink>
                     </li>
@@ -255,8 +305,20 @@ export function Layout({ children }: LayoutProps) {
               </div>
             ))}
           </div>
-          <div style={{ marginTop:48, paddingTop:24, borderTop:'1px solid rgba(255,255,255,0.06)', textAlign:'center', fontSize:12, color:'rgba(255,255,255,0.25)' }}>
-            © 2026 FinBack AI. All rights reserved.
+
+          {/* Bottom bar */}
+          <div style={{ paddingTop:24, borderTop:'1px solid rgba(255,255,255,0.06)', display:'flex', flexWrap:'wrap', alignItems:'center', justifyContent:'space-between', gap:12 }}>
+            <p style={{ fontSize:12, color:'rgba(255,255,255,0.2)' }}>
+              © 2026 FinBack AI. All rights reserved. Built with ⚡ for campus communities.
+            </p>
+            <div style={{ display:'flex', alignItems:'center', gap:16 }}>
+              <span style={{ display:'flex', alignItems:'center', gap:5, padding:'4px 12px', borderRadius:20, background:'rgba(52,211,153,0.08)', border:'1px solid rgba(52,211,153,0.15)', fontSize:11, color:'#34d399', fontWeight:500 }}>
+                <motion.span animate={{ opacity:[1,0.3,1] }} transition={{ duration:1.5, repeat:Infinity }}
+                  style={{ width:5, height:5, borderRadius:'50%', background:'#34d399', display:'inline-block' }} />
+                All systems operational
+              </span>
+              <span style={{ fontSize:11, color:'rgba(255,255,255,0.2)' }}>v2.0.0</span>
+            </div>
           </div>
         </div>
       </footer>
