@@ -6,161 +6,178 @@
 
 /*
 ==========================================================================
-【AI HANDOVER NOTE】
-1. DESIGN PHILOSOPHY:
-   - Primary approach: Neo-minimalism meets AI-forward SaaS aesthetics
-   - Visual style: Clean, professional startup product with subtle depth through soft shadows and refined glassmorphism
-   - Rationale: FinBack AI positions as a funded startup solution, not a college project. The design balances technical sophistication (AI matching, embeddings) with approachable UX for college students. Dark mode default reflects modern SaaS standards and reduces eye strain during extended use.
-   - Key principles: Trust-building through professional polish, clarity in data-heavy interfaces (match scores, analytics), and subtle AI-themed accents without being gimmicky
-
-2. TYPOGRAPHY:
-   - Sans choice: Inter provides exceptional readability at all sizes, professional SaaS credibility, and excellent number rendering for match percentages and analytics. Its geometric precision conveys technical competence while remaining friendly.
-   - Mono usage: JetBrains Mono for displaying technical data (GPS coordinates, timestamps, confidence scores, API responses in admin panel). Enhances the AI/tech-forward brand perception.
-
-3. COLOR SYSTEM:
-   - Brand primary: Deep violet-blue (H: 260) evokes AI/tech innovation while differentiating from typical blue SaaS products. Sophisticated and trustworthy.
-   - Color mapping: --brand anchors --primary (CTAs, active states), --accent (AI match highlights, notification badges), --ring (focus states for accessibility)
-   - Semantic colors: --success (H: 150, vibrant green) for high match scores (>80%), --warning (H: 45, amber) for medium matches, --destructive (H: 10, coral-red) for spam flags and deletions
-   - Dark mode strategy: Rich, deep backgrounds (L: 0.12) with elevated surfaces using subtle lightness shifts. Higher chroma on interactive elements for depth perception. Violet undertones throughout maintain brand cohesion.
-
-4. USAGE GUIDE:
-   - Layout: Dashboard full-width with collapsible sidebar. Item cards use Bento-style modular surfaces with 1rem radius. Match results display as elevated cards with confidence score gradients.
-   - Effects: Apply backdrop-blur-md to modals and popovers. Use subtle box-shadow layering (0 1px 3px, 0 8px 24px) for depth. Rim-light effect on card borders in dark mode using --border with 50% opacity.
-   - AI-specific patterns: Gradient overlays on match confidence bars (primary → accent). Pulsing ring animation on real-time match notifications. Soft glow on AI processing states.
-   - Mobile-first: Touch targets minimum 44px. Bottom navigation for primary actions. Swipe gestures for item browsing.
+FINBACK AI — UNIFIED DESIGN SYSTEM v2.0
+Color Palette: Deep Space Violet
+  --fb-base       #08080f  (page background)
+  --fb-surface    #100e1f  (card / elevated surface)
+  --fb-surface-2  #161228  (hover / nested surface)
+  --fb-border     rgba(255,255,255,0.08)
+  --fb-purple     #7c3aed  (brand primary)
+  --fb-purple-lt  #a78bfa  (brand light / text)
+  --fb-blue       #3b82f6  (secondary accent)
+  --fb-blue-lt    #60a5fa
+  --fb-green      #059669  (success / found)
+  --fb-green-lt   #34d399
+  --fb-red        #dc2626  (danger / lost)
+  --fb-red-lt     #f87171
+  --fb-amber      #d97706  (warning / medium)
+  --fb-amber-lt   #fbbf24
 ==========================================================================
 */
 
+/* ── CSS Custom Properties ── */
 :root {
+  --fb-base:      #08080f;
+  --fb-surface:   #100e1f;
+  --fb-surface-2: #161228;
+  --fb-border:    rgba(255,255,255,0.08);
+  --fb-border-2:  rgba(255,255,255,0.12);
+
+  /* Brand */
+  --fb-purple:    #7c3aed;
+  --fb-purple-lt: #a78bfa;
+  --fb-blue:      #3b82f6;
+  --fb-blue-lt:   #60a5fa;
+
+  /* Semantic */
+  --fb-green:     #059669;
+  --fb-green-lt:  #34d399;
+  --fb-red:       #dc2626;
+  --fb-red-lt:    #f87171;
+  --fb-amber:     #d97706;
+  --fb-amber-lt:  #fbbf24;
+
+  /* Gradients */
+  --fb-grad-brand:   linear-gradient(135deg, #7c3aed, #3b82f6);
+  --fb-grad-title:   linear-gradient(135deg, #a78bfa, #60a5fa, #34d399);
+  --fb-grad-shimmer: linear-gradient(90deg, transparent, rgba(167,139,250,0.6), rgba(96,165,250,0.8), transparent);
+  --fb-grad-bar:     linear-gradient(90deg, #7c3aed, #3b82f6, #34d399, #7c3aed);
+
+  /* Glass surface helpers */
+  --fb-glass:       rgba(16,14,31,0.85);
+  --fb-glass-hover: rgba(22,18,40,0.9);
+  --fb-blur:        blur(24px);
+
   /* Typography */
   --font-sans: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: JetBrains Mono, 'Courier New', monospace;
-  
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+
   /* Radius */
   --radius: 1rem;
 
-  /* Core UI Tokens */
-  --background: oklch(0.99 0.002 260);
-  --foreground: oklch(0.15 0.01 260);
-  --card: oklch(0.98 0.004 260);
-  --card-foreground: oklch(0.18 0.01 260);
-  --popover: oklch(0.99 0.002 260);
+  /* Shadcn light tokens */
+  --background:         oklch(0.99 0.002 260);
+  --foreground:         oklch(0.15 0.01 260);
+  --card:               oklch(0.98 0.004 260);
+  --card-foreground:    oklch(0.18 0.01 260);
+  --popover:            oklch(0.99 0.002 260);
   --popover-foreground: oklch(0.15 0.01 260);
-  --primary: oklch(0.48 0.18 260);
+  --primary:            oklch(0.48 0.18 260);
   --primary-foreground: oklch(0.98 0.004 260);
-  --secondary: oklch(0.92 0.01 260);
+  --secondary:          oklch(0.92 0.01 260);
   --secondary-foreground: oklch(0.22 0.012 260);
-  --muted: oklch(0.94 0.008 260);
-  --muted-foreground: oklch(0.48 0.015 260);
-  --accent: oklch(0.55 0.22 280);
-  --accent-foreground: oklch(0.98 0.004 280);
-  --destructive: oklch(0.55 0.22 10);
+  --muted:              oklch(0.94 0.008 260);
+  --muted-foreground:   oklch(0.48 0.015 260);
+  --accent:             oklch(0.55 0.22 280);
+  --accent-foreground:  oklch(0.98 0.004 280);
+  --destructive:        oklch(0.55 0.22 10);
   --destructive-foreground: oklch(0.98 0.004 10);
-  --border: oklch(0.88 0.01 260);
-  --input: oklch(0.88 0.01 260);
-  --ring: oklch(0.48 0.18 260);
-  
-  /* Chart Tokens */
+  --border:  oklch(0.88 0.01 260);
+  --input:   oklch(0.88 0.01 260);
+  --ring:    oklch(0.48 0.18 260);
+
   --chart-1: oklch(0.52 0.18 260);
   --chart-2: oklch(0.58 0.20 280);
   --chart-3: oklch(0.62 0.18 150);
   --chart-4: oklch(0.60 0.20 45);
   --chart-5: oklch(0.56 0.20 320);
-  
-  /* Sidebar Tokens */
-  --sidebar: oklch(0.97 0.004 260);
-  --sidebar-foreground: oklch(0.22 0.012 260);
-  --sidebar-primary: oklch(0.48 0.18 260);
+
+  --sidebar:                    oklch(0.97 0.004 260);
+  --sidebar-foreground:         oklch(0.22 0.012 260);
+  --sidebar-primary:            oklch(0.48 0.18 260);
   --sidebar-primary-foreground: oklch(0.98 0.004 260);
-  --sidebar-accent: oklch(0.92 0.01 260);
-  --sidebar-accent-foreground: oklch(0.22 0.012 260);
-  --sidebar-border: oklch(0.88 0.01 260);
-  --sidebar-ring: oklch(0.48 0.18 260);
+  --sidebar-accent:             oklch(0.92 0.01 260);
+  --sidebar-accent-foreground:  oklch(0.22 0.012 260);
+  --sidebar-border:             oklch(0.88 0.01 260);
+  --sidebar-ring:               oklch(0.48 0.18 260);
 }
 
 .dark {
-  --background: oklch(0.12 0.015 260);
-  --foreground: oklch(0.92 0.008 260);
-  --card: oklch(0.16 0.018 260);
-  --card-foreground: oklch(0.90 0.008 260);
-  --popover: oklch(0.14 0.016 260);
+  --background:         oklch(0.12 0.015 260);
+  --foreground:         oklch(0.92 0.008 260);
+  --card:               oklch(0.16 0.018 260);
+  --card-foreground:    oklch(0.90 0.008 260);
+  --popover:            oklch(0.14 0.016 260);
   --popover-foreground: oklch(0.92 0.008 260);
-  --primary: oklch(0.62 0.24 260);
+  --primary:            oklch(0.62 0.24 260);
   --primary-foreground: oklch(0.12 0.015 260);
-  --secondary: oklch(0.22 0.025 260);
+  --secondary:          oklch(0.22 0.025 260);
   --secondary-foreground: oklch(0.88 0.01 260);
-  --muted: oklch(0.20 0.022 260);
-  --muted-foreground: oklch(0.62 0.02 260);
-  --accent: oklch(0.68 0.26 280);
-  --accent-foreground: oklch(0.12 0.015 280);
-  --destructive: oklch(0.62 0.26 10);
+  --muted:              oklch(0.20 0.022 260);
+  --muted-foreground:   oklch(0.62 0.02 260);
+  --accent:             oklch(0.68 0.26 280);
+  --accent-foreground:  oklch(0.12 0.015 280);
+  --destructive:        oklch(0.62 0.26 10);
   --destructive-foreground: oklch(0.95 0.006 10);
   --border: oklch(0.26 0.028 260);
-  --input: oklch(0.26 0.028 260);
-  --ring: oklch(0.62 0.24 260);
-  
-  /* Chart Tokens */
+  --input:  oklch(0.26 0.028 260);
+  --ring:   oklch(0.62 0.24 260);
+
   --chart-1: oklch(0.65 0.24 260);
   --chart-2: oklch(0.68 0.26 280);
   --chart-3: oklch(0.70 0.22 150);
   --chart-4: oklch(0.68 0.24 45);
   --chart-5: oklch(0.66 0.24 320);
-  
-  /* Sidebar Tokens */
-  --sidebar: oklch(0.14 0.016 260);
-  --sidebar-foreground: oklch(0.88 0.01 260);
-  --sidebar-primary: oklch(0.62 0.24 260);
+
+  --sidebar:                    oklch(0.14 0.016 260);
+  --sidebar-foreground:         oklch(0.88 0.01 260);
+  --sidebar-primary:            oklch(0.62 0.24 260);
   --sidebar-primary-foreground: oklch(0.12 0.015 260);
-  --sidebar-accent: oklch(0.22 0.025 260);
-  --sidebar-accent-foreground: oklch(0.88 0.01 260);
-  --sidebar-border: oklch(0.26 0.028 260);
-  --sidebar-ring: oklch(0.62 0.24 260);
+  --sidebar-accent:             oklch(0.22 0.025 260);
+  --sidebar-accent-foreground:  oklch(0.88 0.01 260);
+  --sidebar-border:             oklch(0.26 0.028 260);
+  --sidebar-ring:               oklch(0.62 0.24 260);
 }
 
 @theme inline {
-  /* Shadcn Core Mapping */
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
+  --color-background:         var(--background);
+  --color-foreground:         var(--foreground);
+  --color-card:               var(--card);
+  --color-card-foreground:    var(--card-foreground);
+  --color-popover:            var(--popover);
   --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
+  --color-primary:            var(--primary);
   --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
+  --color-secondary:          var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
+  --color-muted:              var(--muted);
+  --color-muted-foreground:   var(--muted-foreground);
+  --color-accent:             var(--accent);
+  --color-accent-foreground:  var(--accent-foreground);
+  --color-destructive:        var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
+  --color-input:  var(--input);
+  --color-ring:   var(--ring);
 
-  /* Charts Mapping */
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
-  /* Sidebar Mapping */
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar:                    var(--sidebar);
+  --color-sidebar-foreground:         var(--sidebar-foreground);
+  --color-sidebar-primary:            var(--sidebar-primary);
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-accent:             var(--sidebar-accent);
+  --color-sidebar-accent-foreground:  var(--sidebar-accent-foreground);
+  --color-sidebar-border:             var(--sidebar-border);
+  --color-sidebar-ring:               var(--sidebar-ring);
 
-  /* Typography */
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
 
-  /* Radius */
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
@@ -171,83 +188,229 @@
   * {
     @apply border-border outline-ring/50;
   }
-
   html {
     @apply scroll-smooth antialiased;
   }
-
   body {
     @apply bg-background text-foreground font-sans min-h-screen;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
-
   h1, h2, h3, h4, h5, h6 {
     @apply font-semibold tracking-tight;
   }
-
   code, pre {
     @apply font-mono;
   }
-
   ::selection {
-    @apply bg-primary/20 text-primary;
+    background: rgba(124,58,237,0.25);
+    color: #a78bfa;
   }
-
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  ::-webkit-scrollbar-track {
-    @apply bg-transparent;
-  }
+  ::-webkit-scrollbar       { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/40;
+    background: rgba(124,58,237,0.3);
+    border-radius: 99px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(124,58,237,0.55);
   }
 }
 
-/* ── FinBack Theme Wrappers ─────────────────────────────────────────────────── */
-
-/* Dark mode — deep space gradient */
+/* ──────────────────────────────────────────────────────────────
+   FINBACK DARK THEME
+   Single unified dark background — no multi-hue gradient
+────────────────────────────────────────────────────────────── */
 .finback-dark {
-  background: linear-gradient(135deg, #0f0c29 0%, #1a0533 35%, #0d1f3c 70%, #0a2a1a 100%);
+  background-color: #08080f;
+  /* Subtle radial violet vignette — keeps it alive without jarring hue shifts */
+  background-image:
+    radial-gradient(ellipse 80% 60% at 20% 0%,   rgba(109,40,217,0.18) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 100%, rgba(37,99,235,0.12)  0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 50% 50%,  rgba(5,150,105,0.06)  0%, transparent 70%);
   background-attachment: fixed;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255,255,255,0.88);
 }
 
-/* Light mode — clean lavender/white gradient */
+/* ──────────────────────────────────────────────────────────────
+   LIGHT THEME
+────────────────────────────────────────────────────────────── */
 .finback-light {
-  background: linear-gradient(135deg, #f8f7ff 0%, #ede9fe 35%, #e0f2fe 70%, #ecfdf5 100%);
+  background-color: #f5f3ff;
+  background-image:
+    radial-gradient(ellipse 70% 50% at 15% 0%,   rgba(124,58,237,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 85% 100%, rgba(59,130,246,0.06) 0%, transparent 60%);
   background-attachment: fixed;
   color: #1e1b4b;
 }
 
-/* Light mode — make white/transparent cards visible */
-.finback-light .glass-card,
-.finback-light [style*="rgba(255,255,255,0.06)"],
-.finback-light [style*="rgba(255,255,255,0.04)"],
-.finback-light [style*="rgba(255,255,255,0.05)"] {
-  background: rgba(255, 255, 255, 0.75) !important;
-  border-color: rgba(0, 0, 0, 0.08) !important;
+/* Light mode glass cards */
+.finback-light [class*="glass"],
+.finback-light [style*="rgba(255,255,255,0.0"],
+.finback-light [style*="rgba(16,14,31"] {
+  background: rgba(255,255,255,0.8)  !important;
+  border-color: rgba(124,58,237,0.12) !important;
 }
 
-/* Light mode footer */
 .finback-light footer {
-  background: rgba(255, 255, 255, 0.5) !important;
-  border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+  background: rgba(255,255,255,0.7) !important;
+  border-top: 1px solid rgba(124,58,237,0.1) !important;
 }
 
-/* Light mode text overrides for inline rgba(255,255,255,...) text */
-.finback-light p[style*="rgba(255,255,255"],
-.finback-light span[style*="rgba(255,255,255"],
-.finback-light div[style*="rgba(255,255,255"] {
-  color: rgba(30, 27, 75, 0.7) !important;
+/* Light mode text */
+.finback-light [style*="rgba(255,255,255,0.4"],
+.finback-light [style*="rgba(255,255,255,0.3"],
+.finback-light [style*="rgba(255,255,255,0.5"] {
+  color: rgba(30,27,75,0.65) !important;
 }
 
-/* ── Animations ─────────────────────────────────────────────────────────────── */
+/* ──────────────────────────────────────────────────────────────
+   UTILITY CLASSES
+────────────────────────────────────────────────────────────── */
+
+/* Glassmorphism card */
+.fb-glass {
+  background: rgba(16,14,31,0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+}
+.fb-glass:hover {
+  border-color: rgba(124,58,237,0.2);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+/* Brand gradient text */
+.fb-gradient-text {
+  background: linear-gradient(135deg, #a78bfa, #60a5fa, #34d399);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Primary button */
+.fb-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  border: 1px solid rgba(124,58,237,0.5);
+  color: #f3e8ff;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 20px rgba(124,58,237,0.25);
+}
+.fb-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 30px rgba(124,58,237,0.4);
+  border-color: rgba(167,139,250,0.5);
+}
+
+/* Outline button */
+.fb-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.7);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+.fb-btn-outline:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.2);
+  color: #fff;
+}
+
+/* Consistent badge */
+.fb-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.fb-badge-purple {
+  background: rgba(124,58,237,0.12);
+  border: 1px solid rgba(124,58,237,0.25);
+  color: #a78bfa;
+}
+.fb-badge-green {
+  background: rgba(52,211,153,0.1);
+  border: 1px solid rgba(52,211,153,0.25);
+  color: #34d399;
+}
+.fb-badge-red {
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.25);
+  color: #f87171;
+}
+.fb-badge-amber {
+  background: rgba(251,191,36,0.1);
+  border: 1px solid rgba(251,191,36,0.25);
+  color: #fbbf24;
+}
+
+/* Shimmer line sweep animation */
+.fb-shimmer-line {
+  height: 1px;
+  background: var(--fb-grad-shimmer);
+  animation: fb-shimmer-sweep 3s linear infinite;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   KEYFRAME ANIMATIONS
+────────────────────────────────────────────────────────────── */
+
 @keyframes ping {
   75%, 100% { transform: scale(2); opacity: 0; }
 }
+
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  50%       { opacity: 0.4; }
 }
+
+@keyframes fb-shimmer-sweep {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+@keyframes fb-float {
+  0%, 100% { transform: translateY(0px);  }
+  50%       { transform: translateY(-8px); }
+}
+
+@keyframes fb-glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(124,58,237,0.2); }
+  50%       { box-shadow: 0 0 40px rgba(124,58,237,0.45); }
+}
+
+@keyframes fb-spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes fb-bar-fill {
+  from { width: 0%; }
+  to   { width: var(--bar-target, 100%); }
+}
+
+/* Utility animation classes */
+.animate-fb-float    { animation: fb-float 4s ease-in-out infinite; }
+.animate-fb-glow     { animation: fb-glow-pulse 3s ease-in-out infinite; }
+.animate-fb-spin-slow { animation: fb-spin-slow 10s linear infinite; }

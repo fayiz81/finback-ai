@@ -70,13 +70,15 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className={isDarkMode ? 'finback-dark' : 'finback-light'} style={{ minHeight:'100vh' }}>
-      {/* Global ambient blobs */}
+      {/* Global ambient blobs — single palette */}
       {isDarkMode && (
         <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
           <motion.div animate={{ scale:[1,1.1,1], x:[0,20,0] }} transition={{ duration:20, repeat:Infinity, ease:'easeInOut' }}
-            style={{ position:'absolute', width:600, height:600, borderRadius:'50%', background:'radial-gradient(circle, rgba(109,40,217,0.18) 0%, transparent 70%)', top:-200, left:-100, filter:'blur(30px)' }} />
+            style={{ position:'absolute', width:700, height:700, borderRadius:'50%', background:'radial-gradient(circle, rgba(124,58,237,0.16) 0%, transparent 70%)', top:-250, left:-150, filter:'blur(40px)' }} />
           <motion.div animate={{ scale:[1,0.9,1], y:[0,-20,0] }} transition={{ duration:25, repeat:Infinity, ease:'easeInOut', delay:5 }}
-            style={{ position:'absolute', width:500, height:500, borderRadius:'50%', background:'radial-gradient(circle, rgba(5,150,105,0.12) 0%, transparent 70%)', bottom:-100, right:-100, filter:'blur(30px)' }} />
+            style={{ position:'absolute', width:550, height:550, borderRadius:'50%', background:'radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%)', bottom:-120, right:-120, filter:'blur(40px)' }} />
+          <motion.div animate={{ scale:[1,1.05,1], x:[0,-15,0] }} transition={{ duration:30, repeat:Infinity, ease:'easeInOut', delay:10 }}
+            style={{ position:'absolute', width:400, height:400, borderRadius:'50%', background:'radial-gradient(circle, rgba(79,70,229,0.08) 0%, transparent 70%)', top:'45%', left:'48%', filter:'blur(50px)' }} />
         </div>
       )}
 
@@ -106,12 +108,11 @@ export function Layout({ children }: LayoutProps) {
       {/* Header */}
       <header ref={headerRef} style={{
         position:'fixed', top:0, left:0, right:0, zIndex:50,
-        background: scrolled
-          ? (isDarkMode ? 'rgba(15,12,41,0.88)' : 'rgba(255,255,255,0.88)')
-          : (isDarkMode ? 'rgba(15,12,41,0.5)' : 'rgba(255,255,255,0.5)'),
-        backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)',
-        borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)',
+        background: scrolled ? 'rgba(8,8,15,0.92)' : 'rgba(8,8,15,0.5)',
+        backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)',
+        borderBottom:'1px solid rgba(255,255,255,0.07)',
         transition:'background 0.3s',
+        boxShadow: scrolled ? '0 1px 40px rgba(0,0,0,0.4)' : 'none',
       }}>
         <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
