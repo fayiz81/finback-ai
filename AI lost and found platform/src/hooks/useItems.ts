@@ -20,9 +20,12 @@ export function useItems(filters?: { status?: string; search?: string; category?
   useEffect(() => {
     load();
 
-    // ✅ Real-time subscription — re-fetch on any INSERT, UPDATE, or DELETE
+    // ✅ Unique channel name per hook instance — prevents silent collision when
+    //    multiple pages (Dashboard + Browse) each call useItems() simultaneously.
+    //    Supabase only allows ONE subscriber per channel name; duplicates are dropped.
+    const channelId = `items-rt-${Math.random().toString(36).slice(2, 9)}`;
     const channel = supabase
-      .channel('items-realtime')
+      .channel(channelId)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'items' },

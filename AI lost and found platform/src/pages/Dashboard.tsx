@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, TrendingUp, Package, CheckCircle, AlertCircle, ArrowRight, Sparkles, MapPin, Calendar, Image as ImageIcon } from 'lucide-react';
+import { Plus, Search, TrendingUp, Package, CheckCircle, AlertCircle, ArrowRight, Sparkles, MapPin, Calendar, Image as ImageIcon, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useItems } from '@/hooks/useItems';
 import { ROUTE_PATHS } from '@/lib/index';
@@ -40,8 +40,19 @@ function ItemCard({ item, index }: { item: any; index: number }) {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { lostItems, foundItems, matches, getUserItems, isProcessingMatch } = useItems();
+  const { lostItems, foundItems, matches, getUserItems, isProcessingMatch, refetch } = useItems();
   const [activeTab, setActiveTab] = useState('overview');
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+
+  // ── 30-second polling fallback ─────────────────────────────────────────────
+  // If Supabase Realtime WebSocket drops, this ensures data stays fresh.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetch();
+      setLastUpdated(new Date());
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [refetch]);
 
   const displayName = user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'User';
   const userItems = getUserItems(user?.id || '');
@@ -85,10 +96,28 @@ export default function Dashboard() {
             </motion.div>
             <span style={{ fontSize:12, color:'#a78bfa', fontWeight:500 }}>AI Dashboard</span>
           </motion.div>
-          <h1 style={{ fontSize:36, fontWeight:800, color:'#fff', marginBottom:6, letterSpacing:'-0.02em' }}>
-            Welcome back, <span style={{ background:'linear-gradient(135deg,#a78bfa,#60a5fa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>{displayName}</span> 👋
-          </h1>
-          <p style={{ color:'rgba(255,255,255,0.4)', fontSize:15 }}>Your AI-powered lost and found dashboard</p>
+          <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
+            <div>
+              <h1 style={{ fontSize:36, fontWeight:800, color:'#fff', marginBottom:6, letterSpacing:'-0.02em' }}>
+                Welcome back, <span style={{ background:'linear-gradient(135deg,#a78bfa,#60a5fa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>{displayName}</span> 👋
+              </h1>
+              <p style={{ color:'rgba(255,255,255,0.4)', fontSize:15 }}>Your AI-powered lost and found dashboard</p>
+            </div>
+            {/* Live indicator + manual refresh */}
+            <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 12px', borderRadius:20, background:'rgba(52,211,153,0.08)', border:'1px solid rgba(52,211,153,0.2)' }}>
+                <motion.span animate={{ opacity:[1,0.3,1] }} transition={{ duration:1.5, repeat:Infinity }}
+                  style={{ width:6, height:6, borderRadius:'50%', background:'#34d399', display:'inline-block' }} />
+                <span style={{ fontSize:11, color:'#34d399', fontWeight:600 }}>LIVE</span>
+              </div>
+              <motion.button whileHover={{ scale:1.05, rotate:180 }} whileTap={{ scale:0.95 }}
+                transition={{ rotate:{ duration:0.4 } }}
+                onClick={() => { refetch(); setLastUpdated(new Date()); }}
+                style={{ width:32, height:32, borderRadius:10, background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,0.5)', cursor:'pointer' }}>
+                <RefreshCw style={{ width:13, height:13 }} />
+              </motion.button>
+            </div>
+          </div>
         </motion.div>
 
         {/* Stats */}
