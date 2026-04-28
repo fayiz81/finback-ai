@@ -241,8 +241,23 @@ export default function Matches() {
   }), [allMatches]);
 
   return (
-    <div style={{ minHeight:'100vh', padding:'32px 16px' }}>
-      <div style={{ maxWidth:900, margin:'0 auto' }}>
+    <div style={{ minHeight:'100vh', padding:'32px 16px', position:'relative', overflow:'hidden' }}>
+
+      {/* Ambient blobs */}
+      <div style={{ position:'fixed', inset:0, pointerEvents:'none', zIndex:0 }}>
+        <motion.div animate={{ scale:[1,1.18,1], x:[0,40,0], y:[0,-20,0] }} transition={{ duration:22, repeat:Infinity, ease:'easeInOut' }}
+          style={{ position:'absolute', top:'-10%', right:'-8%', width:600, height:600, borderRadius:'50%', background:'radial-gradient(circle, rgba(124,58,237,0.14) 0%, transparent 68%)', filter:'blur(50px)' }} />
+        <motion.div animate={{ scale:[1,0.88,1.1,1], y:[0,30,-20,0] }} transition={{ duration:26, repeat:Infinity, ease:'easeInOut', delay:6 }}
+          style={{ position:'absolute', bottom:'-8%', left:'-5%', width:500, height:500, borderRadius:'50%', background:'radial-gradient(circle, rgba(52,211,153,0.1) 0%, transparent 68%)', filter:'blur(50px)' }} />
+        <motion.div animate={{ scale:[1,1.2,0.9,1], x:[0,-30,20,0] }} transition={{ duration:30, repeat:Infinity, ease:'easeInOut', delay:12 }}
+          style={{ position:'absolute', top:'40%', left:'45%', width:400, height:400, borderRadius:'50%', background:'radial-gradient(circle, rgba(37,99,235,0.08) 0%, transparent 68%)', filter:'blur(60px)' }} />
+      </div>
+
+      {/* Shimmer scan line */}
+      <motion.div animate={{ y:['-100vh','100vh'] }} transition={{ duration:10, repeat:Infinity, ease:'linear', repeatDelay:6 }}
+        style={{ position:'fixed', left:0, right:0, height:2, zIndex:1, pointerEvents:'none', background:'linear-gradient(90deg,transparent,rgba(167,139,250,0.12),rgba(96,165,250,0.18),rgba(167,139,250,0.12),transparent)', filter:'blur(2px)' }} />
+
+      <div style={{ maxWidth:900, margin:'0 auto', position:'relative', zIndex:2 }}>
 
         {/* Header */}
         <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={spring} style={{ marginBottom:32 }}>
@@ -274,8 +289,11 @@ export default function Matches() {
           ].map((e, i) => {
             const Icon = e.icon;
             return (
-              <motion.div key={i} initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} transition={{ ...spring, delay:i*0.08 }}
-                style={{ background:e.bg, border:`1px solid ${e.border}`, borderRadius:14, padding:14, backdropFilter:'blur(20px)' }}>
+              <motion.div key={i} initial={{ opacity:0, y:14 }} animate={{ opacity:1, y:0 }} transition={{ ...spring, delay:0.15+i*0.08 }}
+                whileHover={{ y:-3, scale:1.02, transition:{ duration:0.2 } }}
+                style={{ background:e.bg, border:`1px solid ${e.border}`, borderRadius:14, padding:14, backdropFilter:'blur(20px)', transition:'box-shadow 0.2s', cursor:'default' }}
+                onMouseEnter={el => (el.currentTarget as HTMLDivElement).style.boxShadow=`0 8px 24px ${e.bg.replace('0.08','0.18')}`}
+                onMouseLeave={el => (el.currentTarget as HTMLDivElement).style.boxShadow='none'}>
                 <Icon style={{ width:16, height:16, color:e.color, marginBottom:8 }} />
                 <p style={{ fontSize:12, fontWeight:600, color:'rgba(255,255,255,0.8)', margin:'0 0 3px' }}>{e.label}</p>
                 <p style={{ fontSize:11, color:'rgba(255,255,255,0.35)', margin:0 }}>{e.desc}</p>
@@ -294,10 +312,13 @@ export default function Matches() {
           ].map((s, i) => {
             const Icon = s.icon;
             return (
-              <motion.div key={i} initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} transition={{ ...spring, delay:i*0.06 }}
-                style={{ ...glass, padding:16 }}>
+              <motion.div key={i} initial={{ opacity:0, y:14 }} animate={{ opacity:1, y:0 }} transition={{ ...spring, delay:0.25+i*0.07 }}
+                whileHover={{ y:-3, scale:1.03, transition:{ duration:0.2 } }}
+                style={{ ...glass, padding:16, transition:'box-shadow 0.2s', cursor:'default' }}
+                onMouseEnter={el => (el.currentTarget as HTMLDivElement).style.boxShadow=s.color?`0 6px 20px ${s.color}30`:'0 6px 20px rgba(255,255,255,0.05)'}
+                onMouseLeave={el => (el.currentTarget as HTMLDivElement).style.boxShadow='none'}>
                 <Icon style={{ width:16, height:16, color:s.color||'rgba(255,255,255,0.3)', marginBottom:10 }} />
-                <div style={{ fontSize:24, fontWeight:700, fontFamily:'monospace', color:s.color||'#fff', marginBottom:3 }}>{s.value}</div>
+                <div style={{ fontSize:26, fontWeight:800, fontFamily:'monospace', color:s.color||'#fff', marginBottom:3, letterSpacing:'-0.02em' }}>{s.value}</div>
                 <div style={{ fontSize:11, color:'rgba(255,255,255,0.35)' }}>{s.label}</div>
               </motion.div>
             );
@@ -340,9 +361,26 @@ export default function Matches() {
           <AnimatePresence mode="popLayout">
             {loading ? (
               <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} style={{ textAlign:'center', padding:'64px 0' }}>
-                <div style={{ display:'inline-flex', alignItems:'center', gap:12, color:'rgba(255,255,255,0.4)', fontSize:14 }}>
-                  <div style={{ width:18, height:18, border:'2px solid rgba(124,58,237,0.4)', borderTopColor:'#7c3aed', borderRadius:'50%', animation:'spin 0.8s linear infinite' }} />
-                  Running AI matching engine…
+                <div style={{ display:'inline-flex', flexDirection:'column', alignItems:'center', gap:16 }}>
+                  <div style={{ position:'relative', width:56, height:56 }}>
+                    <motion.div animate={{ rotate:360 }} transition={{ duration:1.2, repeat:Infinity, ease:'linear' }}
+                      style={{ width:56, height:56, borderRadius:'50%', border:'2px solid rgba(124,58,237,0.15)', borderTopColor:'#a78bfa', position:'absolute', inset:0 }} />
+                    <motion.div animate={{ rotate:-360 }} transition={{ duration:2, repeat:Infinity, ease:'linear' }}
+                      style={{ width:38, height:38, borderRadius:'50%', border:'2px solid rgba(96,165,250,0.12)', borderBottomColor:'#60a5fa', position:'absolute', top:9, left:9 }} />
+                    <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                      <Brain style={{ width:16, height:16, color:'#a78bfa' }} />
+                    </div>
+                  </div>
+                  <div>
+                    <p style={{ color:'rgba(255,255,255,0.6)', fontSize:14, fontWeight:500, marginBottom:4 }}>Running AI matching engine…</p>
+                    <p style={{ color:'rgba(255,255,255,0.3)', fontSize:12 }}>Analyzing {lostItems.length} lost × {foundItems.length} found items</p>
+                  </div>
+                  <div style={{ display:'flex', gap:6 }}>
+                    {[0,1,2].map(i => (
+                      <motion.div key={i} animate={{ opacity:[0.2,1,0.2], scale:[0.8,1.1,0.8] }} transition={{ duration:1.2, repeat:Infinity, delay:i*0.2 }}
+                        style={{ width:7, height:7, borderRadius:'50%', background:'#a78bfa' }} />
+                    ))}
+                  </div>
                 </div>
               </motion.div>
             ) : filteredMatches.length === 0 ? (
@@ -361,7 +399,6 @@ export default function Matches() {
             ))}
           </AnimatePresence>
         </div>
-
       </div>
     </div>
   );
