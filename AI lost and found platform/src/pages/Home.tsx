@@ -52,12 +52,44 @@ function DashboardMockup() {
   return (
     <motion.div initial={{ opacity:0, y:32, scale:0.95 }} animate={{ opacity:1, y:0, scale:1 }} transition={{ delay:0.3, duration:0.8, ease:[0.22,1,0.36,1] }}
       style={{ position:'relative', maxWidth:480, width:'100%', marginLeft:'auto', overflow:'visible' }}>
-      {/* Glow */}
-      <div style={{ position:'absolute', inset:0, background:'radial-gradient(ellipse at center, rgba(124,58,237,0.25) 0%, transparent 70%)', borderRadius:24, transform:'scale(0.9) translateY(10%)', filter:'blur(30px)', zIndex:0 }} />
+      
+      {/* Background glow behind mockup */}
+      <motion.div 
+        animate={{ opacity: [0.4, 0.8, 0.4], scale: [0.9, 1.05, 0.9] }} 
+        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+        style={{ position:'absolute', inset:0, background:'radial-gradient(ellipse at center, rgba(124,58,237,0.3) 0%, transparent 70%)', borderRadius:24, filter:'blur(40px)', zIndex:0 }} 
+      />
 
-      <div style={{ ...glass, overflow:'hidden', position:'relative', zIndex:1, boxShadow:'0 25px 60px rgba(0,0,0,0.4)' }}>
+      {/* Floating AI Data Nodes connecting to the mockup */}
+      <motion.div animate={{ y: [-10, 10, -10] }} transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+        style={{ position: 'absolute', top: '10%', left: '-30px', zIndex: 10 }}>
+        <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#60a5fa', boxShadow: '0 0 15px #60a5fa' }} />
+        <div style={{ position: 'absolute', top: 6, left: 12, width: 40, height: 1, background: 'linear-gradient(90deg, #60a5fa, transparent)' }} />
+      </motion.div>
+      <motion.div animate={{ y: [15, -15, 15] }} transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+        style={{ position: 'absolute', bottom: '20%', right: '-25px', zIndex: 10 }}>
+        <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#34d399', boxShadow: '0 0 15px #34d399' }} />
+        <div style={{ position: 'absolute', top: 5, right: 10, width: 30, height: 1, background: 'linear-gradient(-90deg, #34d399, transparent)' }} />
+      </motion.div>
+
+      <div style={{ ...glass, overflow:'hidden', position:'relative', zIndex:1, boxShadow:'0 25px 60px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.08)' }}>
+        
+        {/* Animated AI Scanning Laser Overlay */}
+        <div className="pointer-events-none absolute inset-0 z-50 overflow-hidden rounded-2xl mix-blend-screen">
+          <motion.div 
+            animate={{ top: ['-20%', '120%'] }} 
+            transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+            style={{ 
+              position: 'absolute', width: '100%', height: '150px',
+              background: 'linear-gradient(to bottom, transparent, rgba(167, 139, 250, 0.1) 80%, rgba(167, 139, 250, 0.5) 100%)',
+              borderBottom: '2px solid rgba(167, 139, 250, 0.8)',
+              boxShadow: '0 5px 20px rgba(124, 58, 237, 0.4)'
+            }} 
+          />
+        </div>
+
         {/* Browser chrome */}
-        <div style={{ display:'flex', alignItems:'center', gap:8, padding:'12px 16px', borderBottom:'1px solid rgba(255,255,255,0.06)', background:'rgba(0,0,0,0.2)' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8, padding:'12px 16px', borderBottom:'1px solid rgba(255,255,255,0.06)', background:'rgba(0,0,0,0.3)' }}>
           <div style={{ display:'flex', gap:5 }}>
             {['rgba(239,68,68,0.5)','rgba(251,191,36,0.5)','rgba(52,211,153,0.5)'].map((c,i) => (
               <div key={i} style={{ width:11, height:11, borderRadius:'50%', background:c }} />
