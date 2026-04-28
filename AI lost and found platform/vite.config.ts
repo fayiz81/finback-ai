@@ -237,22 +237,10 @@ export default defineConfig(({ mode }) => {
       ? { drop: ['console', 'debugger'], pure: ['console.log', 'console.warn', 'console.debug'] }
       : {},
     build: {
-      chunkSizeWarningLimit: 600,
+      chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {
-          // ── Manual chunk splitting — breaks up the 695 kB vendor bundle ──────
-          manualChunks(id) {
-            // Supabase client (realtime WebSocket heavy)
-            if (id.includes('node_modules/@supabase')) return 'vendor-supabase';
-            // Framer Motion (large animation library)
-            if (id.includes('node_modules/framer-motion')) return 'vendor-motion';
-            // All Radix UI primitives
-            if (id.includes('node_modules/@radix-ui')) return 'vendor-radix';
-            // React core
-            if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) return 'vendor-react';
-            // Remaining node_modules → shared vendor chunk
-            if (id.includes('node_modules')) return 'vendor';
-          },
+          // Let Vite handle chunking automatically to prevent circular dependencies
         },
       },
     },
