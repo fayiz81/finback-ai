@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
@@ -7,40 +7,45 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY env variables');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    // Persist session in localStorage so returning users are authenticated
-    // immediately without any network call on load.
-    persistSession: true,
-    // Auto-refresh the JWT 60 seconds before it expires — prevents mid-session
-    // 401s without requiring the user to log in again.
-    autoRefreshToken: true,
-    // Detect and broadcast sign-in/out events across browser tabs.
-    detectSessionInUrl: true,
-    // Use PKCE flow for better security (prevents auth code interception).
-    flowType: 'pkce',
-  },
-  global: {
-    headers: {
-      // Identify requests for better Supabase dashboard analytics.
-      'x-client-info': 'finback-ai/1.0',
+// Singleton guard — prevents "Multiple GoTrueClient instances" warning
+// that occurs with React HMR or multiple module evaluations.
+const globalKey = '__finback_supabase__';
+declare global { interface Window { [globalKey]?: SupabaseClient } }
+
+function getClient(): SupabaseClient {
+  if (typeof window !== 'undefined' && window[globalKey]) {
+    return window[globalKey]!;
+  }
+
+  const client = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      flowType: 'pkce',
+      // Unique storage key prevents conflicts if multiple apps share the domain
+      storageKey: 'finback-ai-auth',
     },
-    // Only use keepalive for non-upload requests (keepalive has 64KB limit)
-    fetch: (url, options = {}) => {
-      const isUpload = options.method === 'POST' && options.body instanceof Blob ||
-                       options.body instanceof File ||
-                       options.body instanceof FormData ||
-                       (options.body && (options.body as any).size > 60000);
-      return fetch(url, { ...options, keepalive: isUpload ? false : true });
+    global: {
+      headers: { 'x-client-info': 'finback-ai/2.0' },
+      fetch: (url, options = {}) => {
+        const isUpload =
+          (options.method === 'POST' && options.body instanceof Blob) ||
+          options.body instanceof File ||
+          options.body instanceof FormData ||
+          !!(options.body && (options.body as any).size > 60000);
+        return fetch(url, { ...options, keepalive: !isUpload });
+      },
     },
-  },
-  realtime: {
-    // Increase heartbeat interval to reduce wasted connections when the tab
-    // is idle — helps with connection limits under high concurrent load.
-    params: { eventsPerSecond: 10 },
-  },
-  db: {
-    // Always use the public schema.
-    schema: 'public',
-  },
-});
+    realtime: { params: { eventsPerSecond: 10 } },
+    db: { schema: 'public' },
+  });
+
+  if (typeof window !== 'undefined') {
+    window[globalKey] = client;
+  }
+
+  return client;
+}
+
+export const supabase = getClient();
