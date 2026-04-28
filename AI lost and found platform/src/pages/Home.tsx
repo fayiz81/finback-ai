@@ -51,7 +51,7 @@ function DashboardMockup() {
 
   return (
     <motion.div initial={{ opacity:0, y:32, scale:0.95 }} animate={{ opacity:1, y:0, scale:1 }} transition={{ delay:0.3, duration:0.8, ease:[0.22,1,0.36,1] }}
-      style={{ position:'relative', maxWidth:480, width:'100%', marginLeft:'auto' }}>
+      style={{ position:'relative', maxWidth:480, width:'100%', marginLeft:'auto', overflow:'visible' }}>
       {/* Glow */}
       <div style={{ position:'absolute', inset:0, background:'radial-gradient(ellipse at center, rgba(124,58,237,0.25) 0%, transparent 70%)', borderRadius:24, transform:'scale(0.9) translateY(10%)', filter:'blur(30px)', zIndex:0 }} />
 
@@ -137,15 +137,15 @@ function DashboardMockup() {
         </div>
       </div>
 
-      {/* Floating chips */}
-      <motion.div initial={{ opacity:0, x:-20 }} animate={{ opacity:1, x:0 }} transition={{ delay:1.5 }}
-        style={{ position:'absolute', left:-120, top:60, ...glass, padding:'10px 14px' }}>
+      {/* Floating chips — anchored to right side of mockup so they never overlap the text column */}
+      <motion.div initial={{ opacity:0, x:20 }} animate={{ opacity:1, x:0 }} transition={{ delay:1.5 }}
+        style={{ position:'absolute', right:-10, top:-24, ...glass, padding:'10px 14px', zIndex:10, whiteSpace:'nowrap' }}>
         <div style={{ fontSize:9, color:'rgba(255,255,255,0.35)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:3 }}>Items lost</div>
         <div style={{ fontSize:15, fontWeight:700, color:'#fff' }}>{loading?'—':lostItems.length} items</div>
         <div style={{ fontSize:10, color:'rgba(255,255,255,0.35)', marginTop:4 }}>reported</div>
       </motion.div>
-      <motion.div initial={{ opacity:0, x:-20 }} animate={{ opacity:1, x:0 }} transition={{ delay:1.8 }}
-        style={{ position:'absolute', left:-100, bottom:80, ...glass, padding:'10px 14px' }}>
+      <motion.div initial={{ opacity:0, x:20 }} animate={{ opacity:1, x:0 }} transition={{ delay:1.8 }}
+        style={{ position:'absolute', right:-10, bottom:-24, ...glass, padding:'10px 14px', zIndex:10, whiteSpace:'nowrap' }}>
         <div style={{ fontSize:9, color:'rgba(255,255,255,0.35)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:3 }}>Items found</div>
         <div style={{ fontSize:15, fontWeight:700, color:'#fff' }}>{loading?'—':foundItems.length} items</div>
         <div style={{ fontSize:10, color:'#34d399', marginTop:4 }}>submitted by finders</div>
@@ -204,7 +204,7 @@ export default function Home() {
     <div style={{ minHeight:'100vh' }}>
 
       {/* ── HERO ── */}
-      <section style={{ minHeight:'100vh', display:'flex', alignItems:'center', padding:'80px 16px 64px', position:'relative', overflow:'hidden' }}>
+      <section style={{ minHeight:'100vh', display:'flex', alignItems:'center', padding:'80px 16px 64px', position:'relative' }}>
         <div style={{ maxWidth:1200, margin:'0 auto', width:'100%' }}>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(min(100%, 480px), 1fr))', gap:48, alignItems:'center' }}>
             <div>
