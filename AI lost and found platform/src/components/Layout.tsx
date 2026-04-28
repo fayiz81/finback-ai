@@ -162,8 +162,8 @@ export function Layout({ children }: LayoutProps) {
                 </DropdownMenu>
               ) : (
                 <NavLink to={ROUTE_PATHS.AUTH}
-                  style={{ padding:'8px 18px', borderRadius:10, background:'linear-gradient(135deg,rgba(124,58,237,0.5),rgba(79,70,229,0.5))', border:'1px solid rgba(124,58,237,0.4)', color:'#e9d5ff', fontSize:13, fontWeight:500, textDecoration:'none', display:'none' }}
-                  className="md:flex items-center">
+                  style={{ padding:'8px 18px', borderRadius:10, background:'linear-gradient(135deg,rgba(124,58,237,0.5),rgba(79,70,229,0.5))', border:'1px solid rgba(124,58,237,0.4)', color:'#e9d5ff', fontSize:13, fontWeight:500, textDecoration:'none' }}
+                  className="hidden md:flex items-center">
                   Sign In
                 </NavLink>
               )}

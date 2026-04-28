@@ -676,7 +676,7 @@ export default function AdminDashboard() {
                       <div className="flex flex-col lg:flex-row gap-4">
                         {/* Lost item */}
                         <div className="flex-1 flex gap-3 items-start">
-                          <div className="w-12 h-12 rounded-xl bg-white/5 overflow-hidden flex-shrink-0 cursor-pointer" onClick={() => setSelectedItem(match.lost)}>
+                          <div className="w-12 h-12 rounded-xl bg-white/5 overflow-hidden flex-shrink-0 cursor-pointer" onClick={() => setSelectedItem(match.lostItem)}>
                             {match.lostItem.image_url ? <img src={match.lostItem.image_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Image size={14} className="text-white/20" /></div>}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -701,7 +701,7 @@ export default function AdminDashboard() {
 
                         {/* Found item */}
                         <div className="flex-1 flex gap-3 items-start">
-                          <div className="w-12 h-12 rounded-xl bg-white/5 overflow-hidden flex-shrink-0 cursor-pointer" onClick={() => setSelectedItem(match.found)}>
+                          <div className="w-12 h-12 rounded-xl bg-white/5 overflow-hidden flex-shrink-0 cursor-pointer" onClick={() => setSelectedItem(match.foundItem)}>
                             {match.foundItem.image_url ? <img src={match.foundItem.image_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Image size={14} className="text-white/20" /></div>}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -891,7 +891,7 @@ export default function AdminDashboard() {
 
                 {/* ── BROADCAST MODE ── */}
                 {notifMode === 'broadcast' && (
-                  <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-6 space-y-5">
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-5">
                     <div>
                       <label className="text-xs text-white/40 uppercase tracking-widest mb-2 block">Target Audience</label>
                       <div className="flex flex-wrap gap-2">
@@ -930,14 +930,14 @@ export default function AdminDashboard() {
 
                 {/* ── INDIVIDUAL MODE ── */}
                 {notifMode === 'individual' && (
-                  <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-6 space-y-5">
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-5">
                     <div>
                       <label className="text-xs text-white/40 uppercase tracking-widest mb-3 block">Select Item to Notify About</label>
                       <input value={itemSearch2} onChange={e => setItemSearch2(e.target.value)} placeholder="Search by item title..."
                         className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-white/25 focus:outline-none focus:border-violet-500/50 mb-3" />
                       <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
                         {items.filter(i => i.title.toLowerCase().includes(itemSearch2.toLowerCase())).slice(0, 20).map(item => (
-                          <button key={item.id} onClick={() => setSelectedItem(item)}
+                          <button key={item.id} onClick={() => setSelectedNotifItem(item)}
                             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all border ${selectedNotifItem?.id === item.id ? 'bg-violet-500/15 border-violet-500/40 text-white' : 'bg-white/[0.02] border-white/8 text-white/60 hover:text-white hover:bg-white/5'}`}>
                             <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${item.type === 'lost' ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'}`}>{item.type}</span>
                             <div className="flex-1 min-w-0">

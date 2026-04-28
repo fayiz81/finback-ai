@@ -140,15 +140,15 @@ function DashboardMockup() {
       {/* Floating chips */}
       <motion.div initial={{ opacity:0, x:-20 }} animate={{ opacity:1, x:0 }} transition={{ delay:1.5 }}
         style={{ position:'absolute', left:-120, top:60, ...glass, padding:'10px 14px' }}>
-        <p style={{ fontSize:9, color:'rgba(255,255,255,0.35)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:3 }}>Items lost</p>
-        <p style={{ fontSize:15, fontWeight:700, color:'#fff', margin:0 }}>{loading?'—':lostItems.length} items</p>
-        <p style={{ fontSize:10, color:'rgba(255,255,255,0.35)', marginTop:1 }}>reported</p>
+        <div style={{ fontSize:9, color:'rgba(255,255,255,0.35)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:3 }}>Items lost</div>
+        <div style={{ fontSize:15, fontWeight:700, color:'#fff' }}>{loading?'—':lostItems.length} items</div>
+        <div style={{ fontSize:10, color:'rgba(255,255,255,0.35)', marginTop:4 }}>reported</div>
       </motion.div>
       <motion.div initial={{ opacity:0, x:-20 }} animate={{ opacity:1, x:0 }} transition={{ delay:1.8 }}
         style={{ position:'absolute', left:-100, bottom:80, ...glass, padding:'10px 14px' }}>
-        <p style={{ fontSize:9, color:'rgba(255,255,255,0.35)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:3 }}>Items found</p>
-        <p style={{ fontSize:15, fontWeight:700, color:'#fff', margin:0 }}>{loading?'—':foundItems.length} items</p>
-        <p style={{ fontSize:10, color:'#34d399', marginTop:1 }}>submitted by finders</p>
+        <div style={{ fontSize:9, color:'rgba(255,255,255,0.35)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:3 }}>Items found</div>
+        <div style={{ fontSize:15, fontWeight:700, color:'#fff' }}>{loading?'—':foundItems.length} items</div>
+        <div style={{ fontSize:10, color:'#34d399', marginTop:4 }}>submitted by finders</div>
       </motion.div>
     </motion.div>
   );
