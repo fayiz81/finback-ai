@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { buildEnhancedMatches, type EnhancedMatch } from '@/lib/index';
 
 export function useItems(filters?: { status?: string; search?: string; category?: string }) {
   const [items, setItems] = useState<any[]>([]);
@@ -128,13 +129,16 @@ export function useItems(filters?: { status?: string; search?: string; category?
   const lostItems = items.filter((i) => i.type === 'lost');
   const foundItems = items.filter((i) => i.type === 'found');
 
+  // ── Live AI matches — recomputed whenever items change ────────────────────
+  const matches: EnhancedMatch[] = buildEnhancedMatches(lostItems, foundItems, 0.25);
+
   const getUserItems = (userId: string) => ({
     lostItems: items.filter((i) => i.user_id === userId && i.type === 'lost'),
     foundItems: items.filter((i) => i.user_id === userId && i.type === 'found'),
   });
 
-  const matches: any[] = [];
-  const getMatchesForItem = (_itemId: string) => [];
+  const getMatchesForItem = (itemId: string) =>
+    matches.filter(m => m.lostItem?.id === itemId || m.foundItem?.id === itemId);
 
   const getCurrentLocation = (): Promise<{ lat: number; lng: number }> => {
     return new Promise((resolve, reject) => {

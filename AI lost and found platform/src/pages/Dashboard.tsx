@@ -194,31 +194,48 @@ export default function Dashboard() {
                     <Sparkles style={{ width:18, height:18, color:'#a78bfa' }} />
                   </motion.div>
                   <h2 style={{ fontSize:16, fontWeight:700, color:'rgba(255,255,255,0.8)', margin:0 }}>Recent AI Matches</h2>
+                  <span style={{ marginLeft:'auto', padding:'2px 10px', borderRadius:20, fontSize:11, background:'rgba(124,58,237,0.12)', color:'#a78bfa', border:'1px solid rgba(124,58,237,0.2)' }}>
+                    {matches.length} total
+                  </span>
                 </div>
-                {userMatches.length>0 ? (
-                  <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-                    {userMatches.slice(0,3).map((match,i) => (
+                {matches.length > 0 ? (
+                  <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                    {matches.slice(0,4).map((match, i) => (
                       <motion.div key={match.id} initial={{ opacity:0, x:-12 }} animate={{ opacity:1, x:0 }} transition={{ delay:i*0.08 }}
                         style={{ padding:14, borderRadius:14, background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.07)' }}>
-                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                          <div style={{ fontSize:24, fontWeight:800, color:match.confidenceScore>=0.8?'#34d399':match.confidenceScore>=0.6?'#fbbf24':'rgba(255,255,255,0.5)', fontFamily:'monospace' }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:8 }}>
+                          <div style={{ fontSize:22, fontWeight:800, color:match.confidenceScore>=0.7?'#34d399':match.confidenceScore>=0.45?'#fbbf24':'#f87171', minWidth:48, fontFamily:'monospace' }}>
                             {Math.round(match.confidenceScore*100)}%
                           </div>
-                          <div style={{ flex:1, margin:'0 16px' }}>
+                          <div style={{ flex:1 }}>
                             <div style={{ height:4, background:'rgba(255,255,255,0.05)', borderRadius:2, overflow:'hidden' }}>
                               <motion.div initial={{ width:0 }} animate={{ width:`${match.confidenceScore*100}%` }} transition={{ delay:0.3+i*0.1, duration:0.8 }}
-                                style={{ height:'100%', borderRadius:2, background:match.confidenceScore>=0.8?'#34d399':match.confidenceScore>=0.6?'#fbbf24':'#f87171' }} />
+                                style={{ height:'100%', borderRadius:2, background:match.confidenceScore>=0.7?'#34d399':match.confidenceScore>=0.45?'#fbbf24':'#f87171' }} />
                             </div>
                           </div>
-                          <span style={{ fontSize:11, padding:'2px 8px', borderRadius:20, background:'rgba(124,58,237,0.15)', color:'#a78bfa', border:'1px solid rgba(124,58,237,0.2)' }}>
-                            {new Date(match.createdAt).toLocaleDateString()}
+                          <span style={{ fontSize:10, padding:'2px 7px', borderRadius:20, background:match.breakdown.confidence==='high'?'rgba(52,211,153,0.12)':match.breakdown.confidence==='medium'?'rgba(251,191,36,0.12)':'rgba(239,68,68,0.12)', color:match.breakdown.confidence==='high'?'#34d399':match.breakdown.confidence==='medium'?'#fbbf24':'#f87171', border:`1px solid ${match.breakdown.confidence==='high'?'rgba(52,211,153,0.3)':match.breakdown.confidence==='medium'?'rgba(251,191,36,0.3)':'rgba(239,68,68,0.3)'}` }}>
+                            {match.breakdown.confidence}
                           </span>
                         </div>
+                        <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:12 }}>
+                          <span style={{ padding:'2px 8px', borderRadius:6, background:'rgba(239,68,68,0.12)', color:'#f87171', border:'1px solid rgba(239,68,68,0.2)', maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                            🔴 {match.lostItem?.title}
+                          </span>
+                          <span style={{ color:'rgba(255,255,255,0.25)' }}>↔</span>
+                          <span style={{ padding:'2px 8px', borderRadius:6, background:'rgba(52,211,153,0.12)', color:'#34d399', border:'1px solid rgba(52,211,153,0.2)', maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                            🟢 {match.foundItem?.title}
+                          </span>
+                        </div>
+                        {match.breakdown.signals?.length > 0 && (
+                          <p style={{ fontSize:11, color:'rgba(255,255,255,0.3)', margin:'6px 0 0' }}>
+                            {match.breakdown.signals.slice(0,2).join(' · ')}
+                          </p>
+                        )}
                       </motion.div>
                     ))}
-                    {userMatches.length>3 && (
+                    {matches.length > 4 && (
                       <Link to={ROUTE_PATHS.MATCHES} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, padding:'11px', borderRadius:12, background:'rgba(124,58,237,0.1)', border:'1px solid rgba(124,58,237,0.2)', color:'#a78bfa', fontSize:13, fontWeight:500, textDecoration:'none' }}>
-                        View All Matches <ArrowRight style={{ width:14, height:14 }} />
+                        View All {matches.length} Matches <ArrowRight style={{ width:14, height:14 }} />
                       </Link>
                     )}
                   </div>
