@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
 import { useRef, useMemo } from 'react';
-import { Brain, Zap, Shield, TrendingUp, Users, MapPin, Clock, CheckCircle, ArrowRight, Sparkles, LogOut, LayoutDashboard } from 'lucide-react';
+import { Brain, Zap, Shield, TrendingUp, Users, MapPin, Clock, CheckCircle, ArrowRight, Sparkles, LogOut, LayoutDashboard, Lock } from 'lucide-react';
 import { ROUTE_PATHS, buildEnhancedMatches, getDistanceInKm, getDaysDifference, normalizeScore, calculateMatchScore } from '@/lib/index';
 import { useItems } from '@/hooks/useItems';
 import { useAuth } from '@/hooks/useAuth';
@@ -55,132 +55,127 @@ function DashboardMockup() {
       
       {/* Background glow behind mockup */}
       <motion.div 
-        animate={{ opacity: [0.4, 0.8, 0.4], scale: [0.9, 1.05, 0.9] }} 
-        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-        style={{ position:'absolute', inset:0, background:'radial-gradient(ellipse at center, rgba(124,58,237,0.3) 0%, transparent 70%)', borderRadius:24, filter:'blur(40px)', zIndex:0 }} 
+        animate={{ opacity: [0.3, 0.6, 0.3], scale: [0.95, 1.05, 0.95] }} 
+        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+        style={{ position:'absolute', inset:0, background:'radial-gradient(ellipse at center, rgba(124,58,237,0.4) 0%, transparent 60%)', borderRadius:32, filter:'blur(50px)', zIndex:0 }} 
       />
 
       {/* Floating AI Data Nodes connecting to the mockup */}
-      <motion.div animate={{ y: [-10, 10, -10] }} transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-        style={{ position: 'absolute', top: '10%', left: '-30px', zIndex: 10 }}>
-        <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#60a5fa', boxShadow: '0 0 15px #60a5fa' }} />
-        <div style={{ position: 'absolute', top: 6, left: 12, width: 40, height: 1, background: 'linear-gradient(90deg, #60a5fa, transparent)' }} />
+      <motion.div animate={{ y: [-15, 15, -15] }} transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+        style={{ position: 'absolute', top: '15%', left: '-40px', zIndex: 10, display: 'flex', alignItems: 'center' }}>
+        <div style={{ width: 14, height: 14, borderRadius: '50%', background: '#60a5fa', boxShadow: '0 0 20px #60a5fa, inset 0 0 5px #fff' }} />
+        <div style={{ width: 50, height: 1, background: 'linear-gradient(90deg, #60a5fa, transparent)', opacity: 0.6 }} />
       </motion.div>
-      <motion.div animate={{ y: [15, -15, 15] }} transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-        style={{ position: 'absolute', bottom: '20%', right: '-25px', zIndex: 10 }}>
-        <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#34d399', boxShadow: '0 0 15px #34d399' }} />
-        <div style={{ position: 'absolute', top: 5, right: 10, width: 30, height: 1, background: 'linear-gradient(-90deg, #34d399, transparent)' }} />
+      <motion.div animate={{ y: [20, -20, 20] }} transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+        style={{ position: 'absolute', bottom: '25%', right: '-35px', zIndex: 10, display: 'flex', alignItems: 'center', flexDirection: 'row-reverse' }}>
+        <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#34d399', boxShadow: '0 0 20px #34d399, inset 0 0 5px #fff' }} />
+        <div style={{ width: 40, height: 1, background: 'linear-gradient(-90deg, #34d399, transparent)', opacity: 0.6 }} />
       </motion.div>
 
-      <div style={{ ...glass, overflow:'hidden', position:'relative', zIndex:1, boxShadow:'0 25px 60px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.08)' }}>
+      <div style={{ ...glass, overflow:'hidden', position:'relative', zIndex:1, boxShadow:'0 30px 80px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 24, background: 'rgba(15,12,41,0.6)' }}>
         
         {/* Animated AI Scanning Laser Overlay */}
         <div className="pointer-events-none absolute inset-0 z-50 overflow-hidden rounded-2xl mix-blend-screen">
           <motion.div 
-            animate={{ top: ['-20%', '120%'] }} 
-            transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+            animate={{ top: ['-30%', '130%'] }} 
+            transition={{ duration: 2.5, repeat: Infinity, ease: 'linear' }}
             style={{ 
-              position: 'absolute', width: '100%', height: '150px',
-              background: 'linear-gradient(to bottom, transparent, rgba(167, 139, 250, 0.1) 80%, rgba(167, 139, 250, 0.5) 100%)',
-              borderBottom: '2px solid rgba(167, 139, 250, 0.8)',
-              boxShadow: '0 5px 20px rgba(124, 58, 237, 0.4)'
+              position: 'absolute', width: '100%', height: '180px',
+              background: 'linear-gradient(to bottom, transparent, rgba(167, 139, 250, 0.05) 70%, rgba(167, 139, 250, 0.4) 100%)',
+              borderBottom: '2px solid rgba(167, 139, 250, 0.9)',
+              boxShadow: '0 8px 30px rgba(124, 58, 237, 0.6)'
             }} 
           />
         </div>
 
         {/* Browser chrome */}
-        <div style={{ display:'flex', alignItems:'center', gap:8, padding:'12px 16px', borderBottom:'1px solid rgba(255,255,255,0.06)', background:'rgba(0,0,0,0.3)' }}>
-          <div style={{ display:'flex', gap:5 }}>
-            {['rgba(239,68,68,0.5)','rgba(251,191,36,0.5)','rgba(52,211,153,0.5)'].map((c,i) => (
-              <div key={i} style={{ width:11, height:11, borderRadius:'50%', background:c }} />
+        <div style={{ display:'flex', alignItems:'center', gap:8, padding:'14px 20px', borderBottom:'1px solid rgba(255,255,255,0.08)', background:'rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)' }}>
+          <div style={{ display:'flex', gap:6 }}>
+            {['rgba(239,68,68,0.8)','rgba(251,191,36,0.8)','rgba(52,211,153,0.8)'].map((c,i) => (
+              <div key={i} style={{ width:12, height:12, borderRadius:'50%', background:c, boxShadow: `inset 0 1px 2px rgba(255,255,255,0.3), 0 0 10px ${c.replace('0.8','0.4')}` }} />
             ))}
           </div>
           <div style={{ flex:1, display:'flex', justifyContent:'center' }}>
-            <span style={{ fontSize:11, color:'rgba(255,255,255,0.3)', fontFamily:'monospace' }}>finback-ai.vercel.app</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.05)', padding: '4px 12px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
+              <Lock style={{ width: 10, height: 10, color: 'rgba(255,255,255,0.4)' }} />
+              <span style={{ fontSize:11, color:'rgba(255,255,255,0.5)', fontFamily:'monospace', letterSpacing: '0.05em' }}>finback-ai.app</span>
+            </div>
           </div>
         </div>
 
-        <div style={{ padding:20 }}>
+        <div style={{ padding: '24px 20px' }}>
           {/* Stats row */}
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginBottom:14 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:20 }}>
             {[
-              { label:'Items Today', value:loading?'—':String(todayItems), color:'#a78bfa' },
-              { label:'Matches', value:loading?'—':String(topMatches.length||lostItems.length), color:'#34d399' },
-              { label:'Accuracy', value:loading?'—':`${accuracy}%`, color:'#fbbf24' },
+              { label:'Items Today', value:loading?'—':String(todayItems), color:'#c4b5fd', bg: 'rgba(124,58,237,0.1)' },
+              { label:'Matches', value:loading?'—':String(topMatches.length||lostItems.length), color:'#6ee7b7', bg: 'rgba(52,211,153,0.1)' },
+              { label:'Accuracy', value:loading?'—':`${accuracy}%`, color:'#fcd34d', bg: 'rgba(251,191,36,0.1)' },
             ].map((s,i) => (
               <motion.div key={i} initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.5+i*0.1 }}
-                style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:12, padding:'12px 8px', textAlign:'center' }}>
-                <div style={{ fontSize:20, fontWeight:700, color:s.color, fontFamily:'monospace' }}>{s.value}</div>
-                <div style={{ fontSize:10, color:'rgba(255,255,255,0.35)', marginTop:3 }}>{s.label}</div>
+                style={{ background: s.bg, border:'1px solid rgba(255,255,255,0.06)', borderRadius:16, padding:'14px 10px', textAlign:'center', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)' }}>
+                <div style={{ fontSize:24, fontWeight:800, color:s.color, letterSpacing: '-0.02em' }}>{s.value}</div>
+                <div style={{ fontSize:10, fontWeight: 600, color:'rgba(255,255,255,0.4)', marginTop:4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</div>
               </motion.div>
             ))}
           </div>
 
-          {/* Weekly chart */}
-          <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:14, padding:14, marginBottom:14 }}>
-            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:10 }}>
-              <span style={{ fontSize:11, color:'rgba(255,255,255,0.4)', fontWeight:500 }}>Weekly Items</span>
-              <span style={{ fontSize:10, color:'#34d399', fontFamily:'monospace' }}>{loading?'...': `${items.length} total`}</span>
-            </div>
-            <div style={{ display:'flex', alignItems:'flex-end', gap:4, height:56 }}>
-              {weeklyBars.map((h,i) => (
-                <motion.div key={i} style={{ flex:1, borderRadius:'4px 4px 0 0', background: i===6 ? 'linear-gradient(180deg,#7c3aed,#4f46e5)' : 'rgba(124,58,237,0.25)' }}
-                  initial={{ height:0 }} animate={{ height:`${h}%` }} transition={{ delay:0.7+i*0.07, duration:0.5, ease:'easeOut' }} />
-              ))}
-            </div>
-            <div style={{ display:'flex', marginTop:6 }}>
-              {['M','T','W','T','F','S','S'].map((d,i) => (
-                <span key={i} style={{ flex:1, textAlign:'center', fontSize:9, color:'rgba(255,255,255,0.25)' }}>{d}</span>
-              ))}
-            </div>
-          </div>
-
-          {/* Matches */}
+          {/* Matches Section */}
           <div style={{ marginBottom:4 }}>
-            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:10 }}>
-              <span style={{ fontSize:11, fontWeight:500, color:'rgba(255,255,255,0.7)', display:'flex', alignItems:'center', gap:5 }}>
-                <Sparkles style={{ width:12, height:12, color:'#a78bfa' }} /> AI Matches
+            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:12, alignItems: 'center' }}>
+              <span style={{ fontSize:12, fontWeight:700, color:'rgba(255,255,255,0.8)', display:'flex', alignItems:'center', gap:6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <Sparkles style={{ width:14, height:14, color:'#c4b5fd' }} /> Live Matches
               </span>
-              <span style={{ fontSize:10, color:'#34d399', display:'flex', alignItems:'center', gap:4 }}>
-                <span style={{ width:6, height:6, borderRadius:'50%', background:'#34d399', display:'inline-block', animation:'pulse 2s infinite' }} />
-                {topMatches.length > 0 ? 'ChatGPT Live' : 'Awaiting Items'}
+              <span style={{ fontSize:10, fontWeight: 600, color:'#34d399', display:'flex', alignItems:'center', gap:6, background: 'rgba(52,211,153,0.1)', padding: '4px 10px', borderRadius: 12, border: '1px solid rgba(52,211,153,0.2)' }}>
+                <span style={{ width:6, height:6, borderRadius:'50%', background:'#34d399', display:'inline-block', animation:'pulse 1.5s infinite', boxShadow: '0 0 10px #34d399' }} />
+                {topMatches.length > 0 ? 'GPT-4o ACTIVE' : 'LISTENING'}
               </span>
             </div>
-            {displayMatches.map((m,i) => (
-              <motion.div key={i} initial={{ opacity:0, x:-12 }} animate={{ opacity:1, x:0 }} transition={{ delay:1+i*0.15 }}
-                style={{ display:'flex', alignItems:'center', gap:10, background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:12, padding:10, marginBottom:8 }}>
-                <div style={{ width:32, height:32, borderRadius:9, background:'rgba(124,58,237,0.15)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 }}>{m.emoji}</div>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <p style={{ fontSize:12, fontWeight:600, color:'rgba(255,255,255,0.85)', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{m.title}</p>
-                  <p style={{ fontSize:10, color:'rgba(255,255,255,0.35)', margin:'2px 0 0', display:'flex', alignItems:'center', gap:2 }}>
-                    <MapPin style={{ width:9, height:9 }} />{m.loc}
-                  </p>
-                </div>
-                <div style={{ textAlign:'right', flexShrink:0 }}>
-                  <span style={{ fontSize:12, fontWeight:700, fontFamily:'monospace', color: m.high ? '#34d399' : '#fbbf24' }}>{m.pct}%</span>
-                  <div style={{ width:44, height:3, background:'rgba(255,255,255,0.06)', borderRadius:2, overflow:'hidden', marginTop:4 }}>
-                    <motion.div style={{ height:'100%', borderRadius:2, background: m.high ? '#34d399' : '#fbbf24' }}
-                      initial={{ width:0 }} animate={{ width:`${m.pct}%` }} transition={{ delay:1.2+i*0.15, duration:0.8 }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {displayMatches.map((m,i) => (
+                <motion.div key={i} initial={{ opacity:0, x:-12 }} animate={{ opacity:1, x:0 }} transition={{ delay:1+i*0.15 }}
+                  style={{ display:'flex', alignItems:'center', gap:12, background:'linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))', border:'1px solid rgba(255,255,255,0.08)', borderRadius:16, padding:12, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)' }}>
+                  <div style={{ width:36, height:36, borderRadius:12, background:'linear-gradient(135deg, rgba(124,58,237,0.2), rgba(79,70,229,0.2))', border: '1px solid rgba(124,58,237,0.3)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0, boxShadow: '0 0 15px rgba(124,58,237,0.15)' }}>{m.emoji}</div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ fontSize:13, fontWeight:700, color:'#fff', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', letterSpacing: '-0.01em' }}>{m.title}</p>
+                    <p style={{ fontSize:11, color:'rgba(255,255,255,0.4)', margin:'4px 0 0', display:'flex', alignItems:'center', gap:4, fontWeight: 500 }}>
+                      <MapPin style={{ width:10, height:10 }} />{m.loc}
+                    </p>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                  <div style={{ textAlign:'right', flexShrink:0, width: 60 }}>
+                    <span style={{ fontSize:14, fontWeight:800, color: m.high ? '#34d399' : '#fbbf24', letterSpacing: '-0.02em' }}>{m.pct}%</span>
+                    <div style={{ width:'100%', height:4, background:'rgba(255,255,255,0.1)', borderRadius:2, overflow:'hidden', marginTop:6 }}>
+                      <motion.div style={{ height:'100%', borderRadius:2, background: m.high ? 'linear-gradient(90deg, #10b981, #34d399)' : 'linear-gradient(90deg, #f59e0b, #fbbf24)', boxShadow: m.high ? '0 0 10px rgba(52,211,153,0.5)' : 'none' }}
+                        initial={{ width:0 }} animate={{ width:`${m.pct}%` }} transition={{ delay:1.2+i*0.15, duration:1, ease: 'easeOut' }} />
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Floating chips — anchored to right side of mockup so they never overlap the text column */}
-      <motion.div initial={{ opacity:0, x:20 }} animate={{ opacity:1, x:0 }} transition={{ delay:1.5 }}
-        style={{ position:'absolute', right:-10, top:-24, ...glass, padding:'10px 14px', zIndex:10, whiteSpace:'nowrap' }}>
-        <div style={{ fontSize:9, color:'rgba(255,255,255,0.35)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:3 }}>Items lost</div>
-        <div style={{ fontSize:15, fontWeight:700, color:'#fff' }}>{loading?'—':lostItems.length} items</div>
-        <div style={{ fontSize:10, color:'rgba(255,255,255,0.35)', marginTop:4 }}>reported</div>
+      {/* Premium Floating chips */}
+      <motion.div initial={{ opacity:0, x:20, y: -10 }} animate={{ opacity:1, x:0, y: 0 }} transition={{ delay:1.5 }}
+        style={{ position:'absolute', right:-20, top:-30, ...glass, padding:'12px 16px', zIndex:10, whiteSpace:'nowrap', borderRadius: 16, background: 'rgba(15,12,41,0.8)', border: '1px solid rgba(124,58,237,0.3)', boxShadow: '0 10px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(124,58,237,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Users style={{ width: 16, height: 16, color: '#c4b5fd' }} />
+        </div>
+        <div>
+          <div style={{ fontSize:10, color:'rgba(255,255,255,0.5)', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:2, fontWeight: 600 }}>Active Search</div>
+          <div style={{ fontSize:16, fontWeight:800, color:'#fff', letterSpacing: '-0.02em' }}>{loading?'—':lostItems.length} Lost Items</div>
+        </div>
       </motion.div>
-      <motion.div initial={{ opacity:0, x:20 }} animate={{ opacity:1, x:0 }} transition={{ delay:1.8 }}
-        style={{ position:'absolute', right:-10, bottom:-24, ...glass, padding:'10px 14px', zIndex:10, whiteSpace:'nowrap' }}>
-        <div style={{ fontSize:9, color:'rgba(255,255,255,0.35)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:3 }}>Items found</div>
-        <div style={{ fontSize:15, fontWeight:700, color:'#fff' }}>{loading?'—':foundItems.length} items</div>
-        <div style={{ fontSize:10, color:'#34d399', marginTop:4 }}>submitted by finders</div>
+
+      <motion.div initial={{ opacity:0, x:20, y: 10 }} animate={{ opacity:1, x:0, y: 0 }} transition={{ delay:1.8 }}
+        style={{ position:'absolute', right:-10, bottom:-30, ...glass, padding:'12px 16px', zIndex:10, whiteSpace:'nowrap', borderRadius: 16, background: 'rgba(15,12,41,0.8)', border: '1px solid rgba(52,211,153,0.3)', boxShadow: '0 10px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(52,211,153,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <CheckCircle style={{ width: 16, height: 16, color: '#34d399' }} />
+        </div>
+        <div>
+          <div style={{ fontSize:10, color:'rgba(255,255,255,0.5)', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:2, fontWeight: 600 }}>Recovered</div>
+          <div style={{ fontSize:16, fontWeight:800, color:'#34d399', letterSpacing: '-0.02em' }}>{loading?'—':foundItems.length} Found Items</div>
+        </div>
       </motion.div>
     </motion.div>
   );
