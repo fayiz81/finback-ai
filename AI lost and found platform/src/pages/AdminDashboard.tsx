@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { ROUTE_PATHS, buildEnhancedMatches, getDistanceInKm } from '@/lib/index';
+import { ROUTE_PATHS, buildEnhancedMatches, getDistanceInKm, EMAILJS_TEMPLATE_ID } from '@/lib/index';
 import {
   Users, Package, Shield, RefreshCw, Trash2, UserCheck, Mail,
   Search, LogOut, ChevronRight, AlertTriangle, CheckCircle2,
@@ -220,7 +220,6 @@ export default function AdminDashboard() {
     setNotifSending(true);
 
     const EMAILJS_SERVICE_ID = 'service_0gpttgh';
-    const EMAILJS_TEMPLATE_ID = 'template_ffsyxug';
     const EMAILJS_PUBLIC_KEY = '8WuJMcm-wl0Ho8cYA';
 
     // Get target users
@@ -284,7 +283,6 @@ export default function AdminDashboard() {
     setIndividualSending(true);
 
     const EMAILJS_SERVICE_ID = 'service_0gpttgh';
-    const EMAILJS_TEMPLATE_ID = 'template_ffsyxug';
     const EMAILJS_PUBLIC_KEY = '8WuJMcm-wl0Ho8cYA';
 
     // Find the user who owns this item

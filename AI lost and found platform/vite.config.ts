@@ -207,6 +207,7 @@ function cdnPrefixImages(): Plugin {
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
+  const isProd = mode === 'production';
   return {
     server: {
       host: "::",
@@ -225,14 +226,35 @@ export default defineConfig(({ mode }) => {
       },
     },
     define: {
-      // Define environment variables for build-time configuration
-      // In production, this will be false by default unless explicitly set to 'true'
-      // In development and test, this will be true by default
       __ROUTE_MESSAGING_ENABLED__: JSON.stringify(
-        mode === 'production' 
+        mode === 'production'
           ? process.env.VITE_ENABLE_ROUTE_MESSAGING === 'true'
           : process.env.VITE_ENABLE_ROUTE_MESSAGING !== 'false'
       ),
+    },
+    // ── Strip console.log/warn/debug in production ────────────────────────────
+    esbuild: isProd
+      ? { drop: ['console', 'debugger'], pure: ['console.log', 'console.warn', 'console.debug'] }
+      : {},
+    build: {
+      chunkSizeWarningLimit: 600,
+      rollupOptions: {
+        output: {
+          // ── Manual chunk splitting — breaks up the 695 kB vendor bundle ──────
+          manualChunks(id) {
+            // Supabase client (realtime WebSocket heavy)
+            if (id.includes('node_modules/@supabase')) return 'vendor-supabase';
+            // Framer Motion (large animation library)
+            if (id.includes('node_modules/framer-motion')) return 'vendor-motion';
+            // All Radix UI primitives
+            if (id.includes('node_modules/@radix-ui')) return 'vendor-radix';
+            // React core
+            if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) return 'vendor-react';
+            // Remaining node_modules → shared vendor chunk
+            if (id.includes('node_modules')) return 'vendor';
+          },
+        },
+      },
     },
   }
 });

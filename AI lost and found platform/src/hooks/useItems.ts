@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { buildEnhancedMatches, type EnhancedMatch } from '@/lib/index';
 
@@ -7,7 +7,7 @@ export function useItems(filters?: { status?: string; search?: string; category?
   const [loading, setLoading] = useState(true);
   const [isProcessingMatch, setIsProcessingMatch] = useState(false);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     let query = supabase.from('items').select('*').order('created_at', { ascending: false });
     if (filters?.status && filters.status !== 'all') query = query.eq('status', filters.status);
@@ -16,7 +16,8 @@ export function useItems(filters?: { status?: string; search?: string; category?
     const { data } = await query;
     setItems(data || []);
     setLoading(false);
-  }
+  }, [filters?.status, filters?.search, filters?.category]);
+
 
   useEffect(() => {
     load();

@@ -3,9 +3,9 @@
 // Usage: call sendMatchEmail(newItem, matchedItem, confidence, ownerEmail, ownerName) after item insert.
 
 import emailjs from '@emailjs/browser';
+import { EMAILJS_TEMPLATE_ID } from '@/lib/index';
 
 const EMAILJS_SERVICE_ID  = 'service_0gpttgh';
-const EMAILJS_TEMPLATE_ID = 'template_ffsyxug';
 const EMAILJS_PUBLIC_KEY  = '8WuJMcm-wl0Ho8cYA';
 
 export async function sendMatchEmail(opts: {

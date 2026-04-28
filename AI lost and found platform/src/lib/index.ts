@@ -10,6 +10,7 @@ export const ROUTE_PATHS = {
 } as const;
 
 export const USER_ROLES = { USER: 'user', ADMIN: 'admin' } as const;
+export const EMAILJS_TEMPLATE_ID = 'template_ffsyxug';
 
 export const ITEM_CATEGORIES = [
   'Electronics','Accessories','Documents','Clothing','Books',
