@@ -61,11 +61,12 @@ export default function Dashboard() {
   const userMatches = matches.filter(m => userLostItems.some(i => i.id === m.lostItemId) || userFoundItems.some(i => i.id === m.foundItemId));
   const highConfidenceMatches = userMatches.filter(m => m.confidenceScore > 0.8);
 
+  // Platform-wide stats (shown on cards — matches what Browse shows)
   const stats = [
-    { title:'Lost Items', value:userLostItems.length, icon:Package, color:'#f87171', bg:'rgba(239,68,68,0.1)', border:'rgba(239,68,68,0.2)' },
-    { title:'Found Items', value:userFoundItems.length, icon:CheckCircle, color:'#34d399', bg:'rgba(52,211,153,0.1)', border:'rgba(52,211,153,0.2)' },
-    { title:'AI Matches', value:userMatches.length, icon:Sparkles, color:'#a78bfa', bg:'rgba(124,58,237,0.1)', border:'rgba(124,58,237,0.2)' },
-    { title:'High Confidence', value:highConfidenceMatches.length, icon:TrendingUp, color:'#60a5fa', bg:'rgba(37,99,235,0.1)', border:'rgba(37,99,235,0.2)' },
+    { title:'Total Lost', value: lostItems.length, icon:Package, color:'#f87171', bg:'rgba(239,68,68,0.1)', border:'rgba(239,68,68,0.2)' },
+    { title:'Total Found', value: foundItems.length, icon:CheckCircle, color:'#34d399', bg:'rgba(52,211,153,0.1)', border:'rgba(52,211,153,0.2)' },
+    { title:'My Items', value: userLostItems.length + userFoundItems.length, icon:Sparkles, color:'#a78bfa', bg:'rgba(124,58,237,0.1)', border:'rgba(124,58,237,0.2)' },
+    { title:'AI Matches', value: userMatches.length, icon:TrendingUp, color:'#60a5fa', bg:'rgba(37,99,235,0.1)', border:'rgba(37,99,235,0.2)' },
   ];
 
   const quickActions = [
