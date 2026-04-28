@@ -232,35 +232,164 @@ Color Palette: Deep Space Violet
 }
 
 /* ──────────────────────────────────────────────────────────────
-   LIGHT THEME
+   LIGHT THEME — Complete Override System
+   Targets every dark inline rgba pattern used in TSX pages
 ────────────────────────────────────────────────────────────── */
 .finback-light {
-  background-color: #f5f3ff;
+  background-color: #f4f3ff;
   background-image:
-    radial-gradient(ellipse 70% 50% at 15% 0%,   rgba(124,58,237,0.08) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 85% 100%, rgba(59,130,246,0.06) 0%, transparent 60%);
+    radial-gradient(ellipse 70% 50% at 15% 0%,   rgba(124,58,237,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 85% 100%, rgba(59,130,246,0.05) 0%, transparent 60%);
   background-attachment: fixed;
   color: #1e1b4b;
 }
 
-/* Light mode glass cards */
-.finback-light [class*="glass"],
+/* ── Navbar / Header ── */
+.finback-light header {
+  background: rgba(255,255,255,0.92) !important;
+  border-bottom: 1px solid rgba(124,58,237,0.12) !important;
+  box-shadow: 0 1px 20px rgba(0,0,0,0.06) !important;
+}
+
+/* ── Footer ── */
+.finback-light footer {
+  background: #fff !important;
+  border-top: 1px solid rgba(124,58,237,0.1) !important;
+}
+.finback-light footer p,
+.finback-light footer span,
+.finback-light footer a,
+.finback-light footer div { color: #4b4569 !important; }
+.finback-light footer h3 { color: #1e1b4b !important; }
+
+/* ── Glass / Card surfaces ── */
+/* Catch all dark semi-transparent backgrounds */
 .finback-light [style*="rgba(255,255,255,0.0"],
-.finback-light [style*="rgba(16,14,31"] {
-  background: rgba(255,255,255,0.8)  !important;
+.finback-light [style*="rgba(255,255,255,0.1"],
+.finback-light [style*="rgba(16,14,31"],
+.finback-light [style*="rgba(14,14,24"],
+.finback-light [style*="rgba(20,16,36"],
+.finback-light [style*="rgba(15,12,41"],
+.finback-light [style*="rgba(15,15,25"],
+.finback-light [style*="rgba(0,0,0,0.2"],
+.finback-light [style*="rgba(0,0,0,0.15"],
+.finback-light [style*="rgba(0,0,0,0.3"] {
+  background: rgba(255,255,255,0.85) !important;
+  border-color: rgba(124,58,237,0.12) !important;
+  box-shadow: 0 4px 24px rgba(124,58,237,0.06), 0 1px 4px rgba(0,0,0,0.06) !important;
+}
+
+/* ── Dark absolute page backgrounds ── */
+.finback-light [style*="background:#09090f"],
+.finback-light [style*="background: #09090f"],
+.finback-light [style*="background:linear-gradient(135deg,#09090f"],
+.finback-light [style*="background:linear-gradient(135deg, #09090f"] {
+  background: linear-gradient(135deg, #f4f3ff, #ede9fe) !important;
+}
+
+/* ── All white text → dark ── */
+.finback-light [style*="color:#fff"],
+.finback-light [style*="color: #fff"],
+.finback-light [style*="color: white"],
+.finback-light [style*="color:white"] {
+  color: #1e1b4b !important;
+}
+
+/* ── Muted white text → muted dark ── */
+.finback-light [style*="rgba(255,255,255,0.8"],
+.finback-light [style*="rgba(255,255,255,0.7"],
+.finback-light [style*="rgba(255,255,255,0.6"] { color: #2d2b6b !important; }
+.finback-light [style*="rgba(255,255,255,0.5"],
+.finback-light [style*="rgba(255,255,255,0.4"],
+.finback-light [style*="rgba(255,255,255,0.45"] { color: #5b5891 !important; }
+.finback-light [style*="rgba(255,255,255,0.3"],
+.finback-light [style*="rgba(255,255,255,0.35"] { color: #7c78a8 !important; }
+.finback-light [style*="rgba(255,255,255,0.2"],
+.finback-light [style*="rgba(255,255,255,0.25"] { color: #9d9ac0 !important; }
+
+/* ── White borders → light purple borders ── */
+.finback-light [style*="border:1px solid rgba(255,255,255"],
+.finback-light [style*="border: 1px solid rgba(255,255,255"] {
+  border-color: rgba(124,58,237,0.15) !important;
+}
+
+/* ── Inputs ── */
+.finback-light input, .finback-light select, .finback-light textarea {
+  background: #fff !important;
+  border-color: rgba(124,58,237,0.2) !important;
+  color: #1e1b4b !important;
+}
+.finback-light input::placeholder, .finback-light textarea::placeholder {
+  color: #9d9ac0 !important;
+}
+.finback-light input:focus, .finback-light select:focus {
+  border-color: rgba(124,58,237,0.5) !important;
+  box-shadow: 0 0 0 3px rgba(124,58,237,0.08) !important;
+}
+
+/* ── Browser chrome mockup (DashboardMockup) ── */
+.finback-light [style*="rgba(0,0,0,0.2"] {
+  background: rgba(124,58,237,0.05) !important;
+}
+
+/* ── Purple / brand accented elements — keep them ── */
+.finback-light [style*="rgba(124,58,237"],
+.finback-light [style*="rgba(109,40,217"],
+.finback-light [style*="rgba(79,70,229"] {
+  /* keep purple tints — don't override */
+}
+
+/* ── Stat chips / mini cards with very low opacity white ── */
+.finback-light [style*="background:'rgba(255,255,255,0.05'"],
+.finback-light [style*="background:'rgba(255,255,255,0.04'"],
+.finback-light [style*="background:'rgba(255,255,255,0.03'"] {
+  background: rgba(255,255,255,0.9) !important;
+}
+
+/* ── Button text in light mode ── */
+.finback-light button[style*="color:'rgba(255,255,255"],
+.finback-light button[style*="color: rgba(255,255,255"] {
+  color: #2d2b6b !important;
+}
+
+/* ── Nav links ── */
+.finback-light nav a[style*="rgba(255,255,255,0.55"] { color: #4b4569 !important; }
+.finback-light nav a[style*="rgba(255,255,255"]     { color: #2d2b6b !important; }
+
+/* ── Mobile sheet (side drawer) ── */
+.finback-light [style*="rgba(15,12,41,0.98"],
+.finback-light [style*="rgba(15,12,41,0.95"] {
+  background: rgba(255,255,255,0.98) !important;
+}
+
+/* ── Dropdown menus ── */
+.finback-light [style*="rgba(15,12,41"] {
+  background: #fff !important;
   border-color: rgba(124,58,237,0.12) !important;
 }
 
-.finback-light footer {
-  background: rgba(255,255,255,0.7) !important;
-  border-top: 1px solid rgba(124,58,237,0.1) !important;
+/* ── Section dividers ── */
+.finback-light [style*="borderTop:'1px solid rgba(255,255,255,0.06'"],
+.finback-light [style*="borderBottom:'1px solid rgba(255,255,255,0.06'"] {
+  border-color: rgba(124,58,237,0.1) !important;
 }
 
-/* Light mode text */
-.finback-light [style*="rgba(255,255,255,0.4"],
-.finback-light [style*="rgba(255,255,255,0.3"],
-.finback-light [style*="rgba(255,255,255,0.5"] {
-  color: rgba(30,27,75,0.65) !important;
+/* ── Fixed ambient blobs — hide in light mode ── */
+.finback-light .fixed.inset-0.pointer-events-none {
+  opacity: 0.4;
+}
+
+/* ── Announcement banner — keep ── */
+.finback-light [style*="linear-gradient(90deg,rgba(124,58,237"] {
+  /* keep purple gradient banner */
+}
+
+/* ── Scrollbar in light mode ── */
+.finback-light ::-webkit-scrollbar-thumb {
+  background: rgba(124,58,237,0.2);
+}
+.finback-light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(124,58,237,0.4);
 }
 
 /* ──────────────────────────────────────────────────────────────

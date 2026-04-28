@@ -108,11 +108,13 @@ export function Layout({ children }: LayoutProps) {
       {/* Header */}
       <header ref={headerRef} style={{
         position:'fixed', top:0, left:0, right:0, zIndex:50,
-        background: scrolled ? 'rgba(8,8,15,0.92)' : 'rgba(8,8,15,0.5)',
+        background: isDarkMode
+          ? (scrolled ? 'rgba(8,8,15,0.94)' : 'rgba(8,8,15,0.5)')
+          : (scrolled ? 'rgba(255,255,255,0.96)' : 'rgba(255,255,255,0.7)'),
         backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)',
-        borderBottom:'1px solid rgba(255,255,255,0.07)',
-        transition:'background 0.3s',
-        boxShadow: scrolled ? '0 1px 40px rgba(0,0,0,0.4)' : 'none',
+        borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.07)' : '1px solid rgba(124,58,237,0.12)',
+        transition:'background 0.3s, border-color 0.3s',
+        boxShadow: scrolled ? (isDarkMode ? '0 1px 40px rgba(0,0,0,0.4)' : '0 1px 20px rgba(124,58,237,0.08)') : 'none',
       }}>
         <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
@@ -136,8 +138,8 @@ export function Layout({ children }: LayoutProps) {
                     style={({ isActive }) => ({
                       display:'flex', alignItems:'center', gap:6, padding:'7px 14px',
                       borderRadius:10, fontSize:13, fontWeight:500, transition:'all 0.2s',
-                      background: isActive ? 'rgba(124,58,237,0.25)' : 'transparent',
-                      color: isActive ? '#a78bfa' : 'rgba(255,255,255,0.55)',
+                      background: isActive ? 'rgba(124,58,237,0.15)' : 'transparent',
+                      color: isActive ? '#7c3aed' : (isDarkMode ? 'rgba(255,255,255,0.55)' : 'rgba(30,27,75,0.65)'),
                       border: isActive ? '1px solid rgba(124,58,237,0.3)' : '1px solid transparent',
                     })}>
                     <item.icon className="h-4 w-4" />
