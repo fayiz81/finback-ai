@@ -54,40 +54,12 @@ function DashboardMockup() {
       style={{ position:'relative', maxWidth:480, width:'100%', marginLeft:'auto', overflow:'visible' }}>
       
       {/* Background glow behind mockup */}
-      <motion.div 
-        animate={{ opacity: [0.3, 0.6, 0.3], scale: [0.95, 1.05, 0.95] }} 
-        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+      <div 
         style={{ position:'absolute', inset:0, background:'radial-gradient(ellipse at center, rgba(124,58,237,0.4) 0%, transparent 60%)', borderRadius:32, filter:'blur(50px)', zIndex:0 }} 
       />
 
-      {/* Floating AI Data Nodes connecting to the mockup */}
-      <motion.div animate={{ y: [-15, 15, -15] }} transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-        style={{ position: 'absolute', top: '15%', left: '-40px', zIndex: 10, display: 'flex', alignItems: 'center' }}>
-        <div style={{ width: 14, height: 14, borderRadius: '50%', background: '#60a5fa', boxShadow: '0 0 20px #60a5fa, inset 0 0 5px #fff' }} />
-        <div style={{ width: 50, height: 1, background: 'linear-gradient(90deg, #60a5fa, transparent)', opacity: 0.6 }} />
-      </motion.div>
-      <motion.div animate={{ y: [20, -20, 20] }} transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-        style={{ position: 'absolute', bottom: '25%', right: '-35px', zIndex: 10, display: 'flex', alignItems: 'center', flexDirection: 'row-reverse' }}>
-        <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#34d399', boxShadow: '0 0 20px #34d399, inset 0 0 5px #fff' }} />
-        <div style={{ width: 40, height: 1, background: 'linear-gradient(-90deg, #34d399, transparent)', opacity: 0.6 }} />
-      </motion.div>
-
       <div style={{ ...glass, overflow:'hidden', position:'relative', zIndex:1, boxShadow:'0 30px 80px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 24, background: 'rgba(15,12,41,0.6)' }}>
         
-        {/* Animated AI Scanning Laser Overlay */}
-        <div className="pointer-events-none absolute inset-0 z-50 overflow-hidden rounded-2xl mix-blend-screen">
-          <motion.div 
-            animate={{ top: ['-30%', '130%'] }} 
-            transition={{ duration: 2.5, repeat: Infinity, ease: 'linear' }}
-            style={{ 
-              position: 'absolute', width: '100%', height: '180px',
-              background: 'linear-gradient(to bottom, transparent, rgba(167, 139, 250, 0.05) 70%, rgba(167, 139, 250, 0.4) 100%)',
-              borderBottom: '2px solid rgba(167, 139, 250, 0.9)',
-              boxShadow: '0 8px 30px rgba(124, 58, 237, 0.6)'
-            }} 
-          />
-        </div>
-
         {/* Browser chrome */}
         <div style={{ display:'flex', alignItems:'center', gap:8, padding:'14px 20px', borderBottom:'1px solid rgba(255,255,255,0.08)', background:'rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)' }}>
           <div style={{ display:'flex', gap:6 }}>
@@ -126,7 +98,7 @@ function DashboardMockup() {
                 <Sparkles style={{ width:14, height:14, color:'#c4b5fd' }} /> Live Matches
               </span>
               <span style={{ fontSize:10, fontWeight: 600, color:'#34d399', display:'flex', alignItems:'center', gap:6, background: 'rgba(52,211,153,0.1)', padding: '4px 10px', borderRadius: 12, border: '1px solid rgba(52,211,153,0.2)' }}>
-                <span style={{ width:6, height:6, borderRadius:'50%', background:'#34d399', display:'inline-block', animation:'pulse 1.5s infinite', boxShadow: '0 0 10px #34d399' }} />
+                <span style={{ width:6, height:6, borderRadius:'50%', background:'#34d399', display:'inline-block', boxShadow: '0 0 10px #34d399' }} />
                 {topMatches.length > 0 ? 'GPT-4o ACTIVE' : 'LISTENING'}
               </span>
             </div>
