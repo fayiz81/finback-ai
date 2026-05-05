@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { buildEnhancedMatches, type EnhancedMatch } from '@/lib/index';
+import { enrichDescription } from '@/lib/imageMatch';
 
 export function useItems(filters?: { status?: string; search?: string; category?: string }) {
   const [items, setItems] = useState<any[]>([]);
@@ -115,14 +116,26 @@ export function useItems(filters?: { status?: string; search?: string; category?
         console.log('Image uploaded successfully:', image_url);
       }
     }
+
+    // ── AI Image Description ──────────────────────────────────────────────────
+    // After image is uploaded, use GPT-4o Vision to enrich the description.
+    // This runs in the background — we don't block the insert on it.
+    let enrichedDescription = item.description || '';
+    if (image_url) {
+      console.log('🤖 Requesting AI image description...');
+      const aiDesc = await enrichDescription(enrichedDescription, image_url, item.type || 'lost');
+      enrichedDescription = aiDesc;
+      console.log('✅ AI description:', enrichedDescription);
+    }
+
     const { data, error } = await supabase
       .from('items')
-      .insert([{ ...item, image_url }])
+      .insert([{ ...item, image_url, description: enrichedDescription }])
       .select()
       .single();
 
-    // ✅ Real-time subscription will auto-update all hooks,
-    //    but also push optimistically to local state immediately
+    // Real-time subscription will auto-update all hooks,
+    // but also push optimistically to local state immediately
     if (data) setItems(prev => [data, ...prev]);
     return { data, error };
   };
